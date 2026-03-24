@@ -23,7 +23,7 @@ function StatusTimeline({ currentStatus }) {
             animate={{ scale: 1 }}
             transition={{ delay: i * 0.15, type: 'spring' }}
           >
-            {i <= idx ? '✓' : i + 1}
+            {i <= idx ? '✔' : i + 1}
           </motion.div>
           {i < STATUS_STEPS.length - 1 && (
             <motion.div
@@ -143,7 +143,7 @@ export default function WinningsPage() {
                       animate={{ y: [0, -4, 0] }}
                       transition={{ duration: 2 + i * 0.3, repeat: Infinity }}
                     >
-                      {w.prize_category === '5-match' ? '👑' : w.prize_category === '4-match' ? '🥈' : '🥉'}
+                      {w.prize_category === '5-match' ? '★' : w.prize_category === '4-match' ? '✦' : '●'}
                     </motion.span>
                     <div>
                       <div className="text-white font-bold">{w.prize_category}</div>
@@ -165,7 +165,7 @@ export default function WinningsPage() {
                       paid: 'badge-success',
                       rejected: 'badge-error',
                     }[w.payment_status] || 'badge-warning'}>
-                      {w.payment_status === 'paid' ? '✓ Paid' : w.payment_status}
+                      {w.payment_status === 'paid' ? 'Paid' : w.payment_status}
                     </span>
                   </div>
                 </div>
@@ -212,14 +212,14 @@ export default function WinningsPage() {
                         <button
                           onClick={() => { setUploadId(null); setProofFile(null); }}
                           className="text-dark-500 hover:text-white"
-                        >✕</button>
+                        ><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                       </div>
                     ) : (
                       <button
                         onClick={() => setUploadId(w.id)}
                         className="btn-secondary text-sm w-full py-2.5"
                       >
-                        📎 Upload Proof to Speed Up Verification
+                        Upload Proof to Speed Up Verification
                       </button>
                     )}
                   </div>
@@ -227,7 +227,7 @@ export default function WinningsPage() {
 
                 {w.proof_url && (
                   <div className="mt-3 flex items-center gap-2">
-                    <span className="text-green-400 text-xs">✓ Proof submitted</span>
+                    <span className="text-green-400 text-xs">Proof submitted</span>
                     <a href={w.proof_url} target="_blank" rel="noreferrer" className="text-brand-400 text-xs">View →</a>
                   </div>
                 )}
@@ -240,7 +240,7 @@ export default function WinningsPage() {
               className="text-5xl mb-4"
               animate={{ y: [0, -10, 0], rotate: [0, 5, -5, 0] }}
               transition={{ duration: 4, repeat: Infinity }}
-            >🏆</motion.div>
+            >★</motion.div>
             <h3 className="text-white font-semibold mb-2">No Winnings Yet</h3>
             <p className="text-dark-400 text-sm">Keep entering your scores — your lucky draw could be next month!</p>
           </div>

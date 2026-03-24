@@ -47,10 +47,10 @@ function ActionModal({ winner, type, onClose, onSubmit, loading }) {
           <button
             onClick={onClose}
             className="absolute top-4 right-4 text-dark-500 hover:text-white transition-colors"
-          >✕</button>
+          ><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
 
           <h3 className="text-white font-semibold text-lg mb-5">
-            {isPaid ? '💰 Mark as Paid' : isApprove ? '✅ Approve Winner' : '❌ Reject Claim'}
+            {isPaid ? 'Mark as Paid' : isApprove ? 'Approve Winner' : 'Reject Claim'}
           </h3>
 
           {/* Winner info card */}
@@ -61,7 +61,7 @@ function ActionModal({ winner, type, onClose, onSubmit, loading }) {
                 animate={{ y: [0, -3, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                {winner.prize_category === '5-match' ? '👑' : winner.prize_category === '4-match' ? '🥈' : '🥉'}
+                {winner.prize_category === '5-match' ? '★' : winner.prize_category === '4-match' ? '✦' : '●'}
               </motion.span>
               <div>
                 <div className="text-white font-medium">{winner.users?.first_name} {winner.users?.last_name}</div>
@@ -80,7 +80,7 @@ function ActionModal({ winner, type, onClose, onSubmit, loading }) {
                 rel="noopener noreferrer"
                 className="block glass-card p-3 hover:border-brand-500/30 transition-colors text-center"
               >
-                <span className="text-brand-400 text-sm hover:text-brand-300">🔗 View Proof Document →</span>
+                <span className="text-brand-400 text-sm hover:text-brand-300">View Proof Document →</span>
               </a>
             </div>
           )}
@@ -233,7 +233,7 @@ export default function AdminWinnersPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-white text-sm">
-                        {winner.prize_category === '5-match' ? '👑' : winner.prize_category === '4-match' ? '🥈' : '🥉'}
+                        {winner.prize_category === '5-match' ? '★' : winner.prize_category === '4-match' ? '✦' : '●'}
                         {' '}{winner.prize_category}
                       </span>
                     </td>

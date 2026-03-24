@@ -48,7 +48,7 @@ export default function SubscriptionPage() {
     return (
       <DashboardLayout title="Subscription">
         <div className="max-w-lg mx-auto text-center glass-card p-12">
-          <div className="text-5xl mb-4">💳</div>
+          <div className="text-5xl mb-4">■</div>
           <h2 className="text-white font-bold text-xl mb-2">No Active Subscription</h2>
           <p className="text-dark-400 mb-6">
             Subscribe to enter monthly draws, log your scores, and support a charity you love.
@@ -89,7 +89,7 @@ export default function SubscriptionPage() {
                         : 'badge-error'
                     }
                   >
-                    {sub.cancel_at_period_end ? '⚠️ Cancelling' : sub.status === 'active' ? '✓ Active' : sub.status}
+                    {sub.cancel_at_period_end ? 'Cancelling' : sub.status === 'active' ? 'Active' : sub.status}
                   </span>
                 </div>
                 <h2 className="text-white font-bold text-xl capitalize">
@@ -214,7 +214,7 @@ export default function SubscriptionPage() {
             }}
           >
             <p className="text-yellow-300 text-sm">
-              ⚠️ Your subscription is set to cancel on{' '}
+              ! Your subscription is set to cancel on{' '}
               {sub.current_period_end
                 ? format(new Date(sub.current_period_end), 'MMMM d, yyyy')
                 : '—'}

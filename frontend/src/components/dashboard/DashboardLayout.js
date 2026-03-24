@@ -5,25 +5,26 @@ import Head from 'next/head';
 import { motion, AnimatePresence } from 'framer-motion';
 import gsap from 'gsap';
 import useAuthStore from '../../context/authStore';
+import { IconBarChart, IconTarget, IconDice, IconTrophy, IconHeart, IconCreditCard, IconUser, IconUsers, IconTrendingUp, IconShuffle, IconGolf, IconLogOut } from '../icons/Icons';
 
 const USER_NAV = [
-  { href: '/dashboard', label: 'Overview', icon: '📊' },
-  { href: '/dashboard/scores', label: 'My Scores', icon: '🎯' },
-  { href: '/dashboard/draws', label: 'Draws', icon: '🎰' },
-  { href: '/dashboard/winnings', label: 'Winnings', icon: '🏆' },
-  { href: '/dashboard/charity', label: 'Charity', icon: '💚' },
-  { href: '/dashboard/subscription', label: 'Subscription', icon: '💳' },
-  { href: '/dashboard/profile', label: 'Profile', icon: '👤' },
+  { href: '/dashboard', label: 'Overview', icon: <IconBarChart size={18} /> },
+  { href: '/dashboard/scores', label: 'My Scores', icon: <IconTarget size={18} /> },
+  { href: '/dashboard/draws', label: 'Draws', icon: <IconDice size={18} /> },
+  { href: '/dashboard/winnings', label: 'Winnings', icon: <IconTrophy size={18} /> },
+  { href: '/dashboard/charity', label: 'Charity', icon: <IconHeart size={18} /> },
+  { href: '/dashboard/subscription', label: 'Subscription', icon: <IconCreditCard size={18} /> },
+  { href: '/dashboard/profile', label: 'Profile', icon: <IconUser size={18} /> },
 ];
 
 const ADMIN_NAV = [
-  { href: '/admin', label: 'Dashboard', icon: '📊' },
-  { href: '/admin/draws', label: 'Draws', icon: '🎰' },
-  { href: '/admin/winners', label: 'Winners', icon: '🏆' },
-  { href: '/admin/charities', label: 'Charities', icon: '💚' },
-  { href: '/admin/users', label: 'Users', icon: '👥' },
-  { href: '/admin/subscriptions', label: 'Subscriptions', icon: '💳' },
-  { href: '/admin/analytics', label: 'Analytics', icon: '📈' },
+  { href: '/admin', label: 'Dashboard', icon: <IconBarChart size={18} /> },
+  { href: '/admin/draws', label: 'Draws', icon: <IconDice size={18} /> },
+  { href: '/admin/winners', label: 'Winners', icon: <IconTrophy size={18} /> },
+  { href: '/admin/charities', label: 'Charities', icon: <IconHeart size={18} /> },
+  { href: '/admin/users', label: 'Users', icon: <IconUsers size={18} /> },
+  { href: '/admin/subscriptions', label: 'Subscriptions', icon: <IconCreditCard size={18} /> },
+  { href: '/admin/analytics', label: 'Analytics', icon: <IconTrendingUp size={18} /> },
 ];
 
 const pageVariants = {
@@ -82,7 +83,7 @@ export default function DashboardLayout({ children, title }) {
                 animate={{ y: [0, -3, 0] }}
                 transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
               >
-                ⛳
+              <IconGolf className="text-brand-400" size={22} />
               </motion.span>
               <span className="font-display tracking-widest text-lg text-white group-hover:text-brand-400 transition-colors">
                 GOLFPOOLS
@@ -126,7 +127,7 @@ export default function DashboardLayout({ children, title }) {
                 href={isAdmin ? '/dashboard' : '/admin'}
                 className="flex items-center gap-2 px-4 py-2 text-dark-500 hover:text-brand-400 text-sm transition-colors mb-2"
               >
-                <span>🔄</span>
+                <IconShuffle size={16} />
                 <span>Switch to {isAdmin ? 'User' : 'Admin'}</span>
               </Link>
             )}

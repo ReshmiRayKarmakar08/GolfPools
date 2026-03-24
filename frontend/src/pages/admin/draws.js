@@ -23,14 +23,14 @@ function DrawTypeToggle({ value, onChange }) {
         onClick={() => onChange('random')}
         className={value === 'random' ? 'active' : ''}
       >
-        🎲 Random
+        Random
       </button>
       <button
         type="button"
         onClick={() => onChange('algorithm')}
         className={value === 'algorithm' ? 'active' : ''}
       >
-        🧮 Algorithm
+        Algorithm
       </button>
     </div>
   );
@@ -69,7 +69,7 @@ export default function AdminDrawsPage() {
   const executeMutation = useMutation(drawsAPI.executeDraw, {
     onSuccess: (r) => {
       qc.invalidateQueries('adminDraws');
-      toast.success(`🎉 Draw executed! ${r.data.five_match_winners} jackpot, ${r.data.four_match_winners} four-match, ${r.data.three_match_winners} three-match winners`);
+      toast.success(`Draw executed! ${r.data.five_match_winners} jackpot, ${r.data.four_match_winners} four-match, ${r.data.three_match_winners} three-match winners`);
     },
     onError: (err) => toast.error(err.response?.data?.error || 'Failed to execute draw')
   });
@@ -156,8 +156,8 @@ export default function AdminDrawsPage() {
               className="glass-card p-6 border border-brand-500/20"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-white font-semibold">🔬 Simulation Result</h3>
-                <button onClick={() => setSimResult(null)} className="text-dark-500 hover:text-white">✕</button>
+                <h3 className="text-white font-semibold">Simulation Result</h3>
+                <button onClick={() => setSimResult(null)} className="text-dark-500 hover:text-white"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </div>
               <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
                 {[
@@ -229,9 +229,9 @@ export default function AdminDrawsPage() {
                     <td className="px-6 py-4">
                       {draw.status === 'completed' ? (
                         <div className="text-xs space-y-0.5">
-                          <div className="text-yellow-400">👑 {draw.five_match_winner_count}</div>
-                          <div className="text-gray-400">🥈 {draw.four_match_winner_count}</div>
-                          <div className="text-amber-600">🥉 {draw.three_match_winner_count}</div>
+                          <div className="text-yellow-400">★ {draw.five_match_winner_count}</div>
+                          <div className="text-gray-400">✦ {draw.four_match_winner_count}</div>
+                          <div className="text-amber-600">● {draw.three_match_winner_count}</div>
                         </div>
                       ) : <span className="text-dark-600 text-sm">—</span>}
                     </td>

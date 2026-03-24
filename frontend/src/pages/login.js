@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { IconGolf } from '../components/icons/Icons';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
@@ -49,7 +50,7 @@ export default function LoginPage() {
               animate={{ y: [0, -8, 0] }}
               transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
             >
-              ⛳
+              <IconGolf className="text-brand-400" size={40} />
             </motion.div>
             <h1 className="font-display tracking-wider text-3xl text-white">WELCOME BACK</h1>
             <p className="text-dark-400 mt-2">Sign in to your GolfPools account</p>

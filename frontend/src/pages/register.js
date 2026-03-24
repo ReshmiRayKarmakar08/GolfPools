@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { IconGolf } from '../components/icons/Icons';
 import { useForm } from 'react-hook-form';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -87,7 +88,7 @@ export default function RegisterPage() {
               animate={{ y: [0, -8, 0] }}
               transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
             >
-              ⛳
+              <IconGolf className="text-brand-400" size={40} />
             </motion.div>
             <h1 className="font-display tracking-wider text-3xl text-white">JOIN GOLFPOOLS</h1>
             <p className="text-dark-400 mt-2">Create your account in minutes</p>
@@ -106,7 +107,7 @@ export default function RegisterPage() {
                   animate={i === step ? { scale: [1, 1.1, 1] } : {}}
                   transition={{ duration: 1.5, repeat: Infinity }}
                 >
-                  {i < step ? '✓' : i + 1}
+                  {i < step ? '✔' : i + 1}
                 </motion.div>
                 {i < STEPS.length - 1 && (
                   <div className={`w-12 h-0.5 transition-all duration-300 ${i < step ? 'bg-brand-500' : 'bg-dark-700'}`} />

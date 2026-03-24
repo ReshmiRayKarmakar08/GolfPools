@@ -122,7 +122,7 @@ export default function SubscribePage() {
         modal: {
           ondismiss: () => {
             setPaying(false);
-            toast('Payment cancelled', { icon: '⚠️' });
+            toast('Payment cancelled', { icon: '!' });
           },
         },
         handler: async (response) => {
@@ -135,7 +135,7 @@ export default function SubscribePage() {
             });
 
             await refreshUser();
-            toast.success('🎉 Subscription activated! Welcome to Golf Charity Platform!');
+            toast.success('Subscription activated! Welcome to Golf Charity Platform!');
             router.push('/dashboard');
           } catch (err) {
             toast.error(err.response?.data?.error || 'Payment verification failed. Contact support.');
@@ -160,7 +160,7 @@ export default function SubscribePage() {
     return (
       <DashboardLayout title="Subscription">
         <div className="max-w-lg mx-auto text-center glass-card p-10">
-          <div className="text-5xl mb-4">✅</div>
+          <div className="mb-4"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#00E5CC" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="9 12 12 15 16 9"/></svg></div>
           <h2 className="text-white font-bold text-xl mb-2">You're already subscribed!</h2>
           <p className="text-dark-400 mb-6">
             Your {existingSub.plan_type} subscription is active until{' '}
@@ -329,13 +329,13 @@ export default function SubscribePage() {
                 </div>
                 {[
                   {
-                    label: `💚 ${charityObj?.name || 'Charity'}`,
+                    label: `♥ ${charityObj?.name || 'Charity'}`,
                     value: charityAmount,
                     pct: charityPct,
                     color: '#00E5CC',
                   },
                   {
-                    label: '🏆 Prize Pool',
+                    label: '★ Prize Pool',
                     value: prizePool,
                     pct: 75,
                     color: '#FFD700',
@@ -369,7 +369,7 @@ export default function SubscribePage() {
               <ul className="space-y-2 mb-6">
                 {plan.features.map((f, i) => (
                   <li key={i} className="flex items-center gap-2 text-sm text-dark-300">
-                    <span className="text-brand-400">✓</span>
+                    <svg className="text-brand-400 inline" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                     {f}
                   </li>
                 ))}
@@ -423,7 +423,7 @@ export default function SubscribePage() {
 
               {!selectedCharity && (
                 <p className="text-amber-400 text-xs text-center mt-2">
-                  ⚠️ Please select a charity to continue
+                  ! Please select a charity to continue
                 </p>
               )}
 

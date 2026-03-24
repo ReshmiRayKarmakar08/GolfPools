@@ -84,9 +84,9 @@ export default function AdminDashboard() {
       <div className="space-y-6">
         {/* Stats with count-up */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <CountUpCard icon="👥" label="Total Users" value={stats.totalUsers || 0} link="/admin/users" delay={0} />
-          <CountUpCard icon="💳" label="Active Subscriptions" value={stats.activeSubscriptions || 0} link="/admin/subscriptions" delay={0.1} />
-          <CountUpCard icon="💰" label="Revenue (30d)" value={stats.totalRevenue || 0} prefix="₹" delay={0.2} />
+          <CountUpCard icon="☹" label="Total Users" value={stats.totalUsers || 0} link="/admin/users" delay={0} />
+          <CountUpCard icon="■" label="Active Subscriptions" value={stats.activeSubscriptions || 0} link="/admin/subscriptions" delay={0.1} />
+          <CountUpCard icon="$" label="Revenue (30d)" value={stats.totalRevenue || 0} prefix="₹" delay={0.2} />
           <CountUpCard icon="⏳" label="Pending Payouts" value={stats.pendingWinners || 0} link="/admin/winners" sub="Winners awaiting approval" delay={0.3} />
         </div>
 
@@ -175,10 +175,10 @@ export default function AdminDashboard() {
           <h3 className="text-white font-semibold mb-5">Quick Actions</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { href: '/admin/draws', label: 'Manage Draws', icon: '🎰' },
-              { href: '/admin/winners', label: 'Verify Winners', icon: '🏆' },
-              { href: '/admin/charities', label: 'Manage Charities', icon: '💚' },
-              { href: '/admin/users', label: 'User Management', icon: '👥' },
+              { href: '/admin/draws', label: 'Manage Draws', icon: '☆' },
+              { href: '/admin/winners', label: 'Verify Winners', icon: '★' },
+              { href: '/admin/charities', label: 'Manage Charities', icon: '♥' },
+              { href: '/admin/users', label: 'User Management', icon: '☹' },
             ].map((action, i) => (
               <Link key={action.href} href={action.href}>
                 <motion.div

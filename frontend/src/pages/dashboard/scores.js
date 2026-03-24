@@ -6,6 +6,7 @@ import gsap from 'gsap';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
+import { IconGolf } from '../../components/icons/Icons';
 import { scoresAPI } from '../../utils/api';
 
 const MAX_SCORES = 5;
@@ -171,7 +172,7 @@ export default function ScoresPage() {
             ))}
           </div>
           {scoresData?.length === MAX_SCORES && (
-            <p className="text-amber-400 text-xs mt-2">⚠️ Next score will replace your oldest entry</p>
+            <p className="text-amber-400 text-xs mt-2">! Next score will replace your oldest entry</p>
           )}
         </div>
 
@@ -326,7 +327,7 @@ export default function ScoresPage() {
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 3, repeat: Infinity }}
               >
-                ⛳
+                <IconGolf className="text-brand-400" size={48} />
               </motion.div>
               <h3 className="text-white font-semibold mb-2">No scores yet</h3>
               <p className="text-dark-400 text-sm mb-6">Add your first Stableford score to start entering draws</p>

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import gsap from 'gsap';
 import useAuthStore from '../context/authStore';
 import ParticleCanvas from './effects/ParticleCanvas';
+import { IconGolf } from './icons/Icons';
 import MagneticButton from './effects/MagneticButton';
 
 const pageVariants = {
@@ -91,7 +92,7 @@ export default function AntiGravityLayout({ children }) {
         }}
       >
         <Link href="/" className="flex items-center gap-2 group">
-          <span ref={logoRef} className="text-2xl inline-block">⛳</span>
+          <span ref={logoRef} className="text-2xl inline-block"><IconGolf className="text-brand-400" size={24} /></span>
           <span className="font-display tracking-widest text-xl text-white group-hover:text-brand-400 transition-colors">
             GOLFPOOLS
           </span>

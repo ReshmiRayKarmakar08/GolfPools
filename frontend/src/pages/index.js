@@ -7,6 +7,7 @@ import gsap from 'gsap';
 import { charitiesAPI } from '../utils/api';
 import useAuthStore from '../context/authStore';
 import MagneticButton from '../components/effects/MagneticButton';
+import { IconRocket, IconTarget, IconStar, IconTrophy, IconCrown, IconMedal, IconRefresh, IconHeart, IconGolf, IconCheck } from '../components/icons/Icons';
 
 const PLANS = [
   {
@@ -38,11 +39,18 @@ const STATS = [
 ];
 
 const HOW_IT_WORKS = [
-  { icon: '🚀', title: 'Subscribe', desc: 'Pick a monthly or yearly plan and choose your charity.' },
-  { icon: '🎯', title: 'Enter Scores', desc: 'Log your last 5 Stableford scores (1–45).' },
-  { icon: '✨', title: 'Monthly Draw', desc: 'Your scores enter the automated monthly draw automatically.' },
-  { icon: '🏆', title: 'Win & Give', desc: 'Win prize money and watch your charity impact grow.' },
+  { iconKey: 'rocket', title: 'Subscribe', desc: 'Pick a monthly or yearly plan and choose your charity.' },
+  { iconKey: 'target', title: 'Enter Scores', desc: 'Log your last 5 Stableford scores (1–45).' },
+  { iconKey: 'star', title: 'Monthly Draw', desc: 'Your scores enter the automated monthly draw automatically.' },
+  { iconKey: 'trophy', title: 'Win & Give', desc: 'Win prize money and watch your charity impact grow.' },
 ];
+
+const STEP_ICONS = {
+  rocket: (props) => <IconRocket {...props} />,
+  target: (props) => <IconTarget {...props} />,
+  star: (props) => <IconStar {...props} />,
+  trophy: (props) => <IconTrophy {...props} />,
+};
 
 // GSAP count-up hook
 function useCountUp(ref, target, duration = 2) {
@@ -94,7 +102,7 @@ function StatCard({ stat, index }) {
   );
 }
 
-function PrizeOrb({ tier, emoji, pct, desc, delay, glowColor }) {
+function PrizeOrb({ tier, icon, pct, desc, delay, glowColor }) {
   return (
     <motion.div
       className="flex flex-col items-center"
@@ -110,7 +118,7 @@ function PrizeOrb({ tier, emoji, pct, desc, delay, glowColor }) {
           animationDelay: `${delay * 2}s`,
         }}
       >
-        <div className="text-4xl mb-1">{emoji}</div>
+        <div className="mb-1">{icon}</div>
         <div className="text-3xl font-display gradient-text-gold">{pct}</div>
         <div className="text-xs text-dark-400 mt-1">{tier}</div>
       </div>
@@ -304,11 +312,11 @@ export default function Home() {
                     <div className="hidden md:block absolute top-10 -right-3 text-dark-600 text-2xl z-10">→</div>
                   )}
                   <motion.div
-                    className="text-5xl mb-4"
+                    className="mb-4"
                     animate={{ y: [0, -6, 0] }}
                     transition={{ duration: 2.5 + i * 0.3, repeat: Infinity, ease: 'easeInOut' }}
                   >
-                    {step.icon}
+                    {STEP_ICONS[step.iconKey]({ className: 'text-brand-400', size: 48 })}
                   </motion.div>
                   <div className="text-xs font-mono text-brand-500 mb-2">STEP 0{i + 1}</div>
                   <h3 className="text-white font-bold text-lg mb-2">{step.title}</h3>
@@ -333,17 +341,17 @@ export default function Home() {
             {/* Orbs */}
             <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12 mb-12">
               <PrizeOrb
-                tier="5 Match" emoji="👑" pct="40%"
+                tier="5 Match" icon={<IconCrown className="text-yellow-400" size={36} />} pct="40%"
                 desc="Match all 5 numbers. Jackpot rolls over if no winner!"
                 delay={0} glowColor="rgba(255,215,0,0.25)"
               />
               <PrizeOrb
-                tier="4 Match" emoji="🥈" pct="35%"
+                tier="4 Match" icon={<IconMedal tier="silver" size={36} />} pct="35%"
                 desc="Match 4 of 5 numbers. Split equally among winners."
                 delay={0.15} glowColor="rgba(192,192,192,0.25)"
               />
               <PrizeOrb
-                tier="3 Match" emoji="🥉" pct="25%"
+                tier="3 Match" icon={<IconMedal tier="bronze" size={36} />} pct="25%"
                 desc="Match any 3 numbers. Most common winner tier."
                 delay={0.3} glowColor="rgba(205,127,50,0.25)"
               />
@@ -356,10 +364,10 @@ export default function Home() {
               viewport={{ once: true }}
             >
               <motion.span
-                className="text-3xl"
+                className="text-brand-400"
                 animate={{ rotate: [0, 360] }}
                 transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-              >🔄</motion.span>
+              ><IconRefresh size={28} /></motion.span>
               <div>
                 <div className="text-white font-bold">Jackpot Rollover</div>
                 <div className="text-dark-400 text-sm">If nobody matches all 5 numbers, the 40% jackpot rolls over to the next month — growing the prize pool!</div>
@@ -397,7 +405,7 @@ export default function Home() {
                         animate={{ y: [0, -4, 0] }}
                         transition={{ duration: 2 + i * 0.3, repeat: Infinity }}
                       >
-                        💚
+                          <IconHeart className="text-green-400" size={20} />
                       </motion.div>
                       <div>
                         <div className="text-white font-semibold text-sm">{charity.name}</div>
@@ -466,7 +474,7 @@ export default function Home() {
                   <ul className="space-y-3 mb-8">
                     {plan.features.map((f, j) => (
                       <li key={j} className="flex items-center gap-2 text-sm text-dark-300">
-                        <span className="text-brand-400 font-bold">✓</span>
+                        <IconCheck className="text-brand-400" size={16} />
                         {f}
                       </li>
                     ))}
@@ -483,7 +491,7 @@ export default function Home() {
               ))}
             </div>
             <p className="text-center text-dark-500 text-sm mt-8">
-              💚 Minimum 10% of every subscription goes directly to your chosen charity
+              <IconHeart className="text-green-400 inline" size={16} /> Minimum 10% of every subscription goes directly to your chosen charity
             </p>
           </div>
         </section>
@@ -507,7 +515,7 @@ export default function Home() {
                   animate={{ y: [0, -8, 0], rotate: [0, 5, -5, 0] }}
                   transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
                 >
-                  ⛳
+                  <IconGolf className="text-brand-400" size={48} />
                 </motion.div>
                 <h2 className="section-heading text-4xl md:text-5xl mb-4">Ready to play?</h2>
                 <p className="text-dark-300 mb-8">Join thousands of golfers making a difference. Your subscription, your scores, your chance to win.</p>
@@ -527,7 +535,7 @@ export default function Home() {
         <footer className="py-12 px-6 border-t border-white/5">
           <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
-              <span className="text-xl">⛳</span>
+              <IconGolf className="text-brand-400" size={20} />
               <span className="font-display tracking-widest text-white">GOLFPOOLS</span>
             </div>
             <div className="flex items-center gap-6 text-dark-500 text-sm">

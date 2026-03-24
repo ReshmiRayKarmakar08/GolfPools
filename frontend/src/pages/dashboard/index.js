@@ -102,7 +102,7 @@ export default function DashboardHome() {
             style={{ background: 'radial-gradient(circle at top right, #00c6ff, transparent)' }} />
           <div className="relative z-10">
             <h1 className="text-2xl font-bold text-white mb-1">
-              Welcome back, {user?.first_name} 👋
+              Welcome back, {user?.first_name} 
             </h1>
             <p className="text-dark-400 text-sm">Here's your dashboard overview</p>
           </div>
@@ -110,10 +110,10 @@ export default function DashboardHome() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <CountUpStat icon="🎯" label="Active Scores" value={stats.scoreCount || 0} suffix="/5" link="/dashboard/scores" delay={0} />
-          <CountUpStat icon="🎰" label="Draws Entered" value={stats.drawsEntered || 0} link="/dashboard/draws" delay={0.1} />
-          <CountUpStat icon="🏆" label="Total Won" prefix="₹" value={stats.totalWinnings || 0} link="/dashboard/winnings" delay={0.2} />
-          <CountUpStat icon="💚" label="Charity Given" prefix="₹" value={stats.charityContributed || 0} link="/dashboard/charity" delay={0.3} />
+          <CountUpStat icon="◎" label="Active Scores" value={stats.scoreCount || 0} suffix="/5" link="/dashboard/scores" delay={0} />
+          <CountUpStat icon="☆" label="Draws Entered" value={stats.drawsEntered || 0} link="/dashboard/draws" delay={0.1} />
+          <CountUpStat icon="★" label="Total Won" prefix="₹" value={stats.totalWinnings || 0} link="/dashboard/winnings" delay={0.2} />
+          <CountUpStat icon="♥" label="Charity Given" prefix="₹" value={stats.charityContributed || 0} link="/dashboard/charity" delay={0.3} />
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6">
@@ -208,7 +208,7 @@ export default function DashboardHome() {
                   className="text-4xl mb-2"
                   animate={{ rotate: [0, 360] }}
                   transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-                >🎰</motion.div>
+                >☆</motion.div>
                 <p className="text-dark-500 text-sm">Next draw coming soon!</p>
               </div>
             )}
@@ -238,7 +238,7 @@ export default function DashboardHome() {
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-xl">
-                      {w.prize_category === '5-match' ? '👑' : w.prize_category === '4-match' ? '🥈' : '🥉'}
+                      {w.prize_category === '5-match' ? '★' : w.prize_category === '4-match' ? '✦' : '●'}
                     </span>
                     <div>
                       <div className="text-white font-medium text-sm">{w.prize_category}</div>

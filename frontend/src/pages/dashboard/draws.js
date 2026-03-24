@@ -43,7 +43,7 @@ export default function DrawsPage() {
     onSuccess: (r) => {
       qc.invalidateQueries('currentDraw');
       qc.invalidateQueries('drawHistory');
-      toast.success(`🎉 Entered! Your numbers: ${r.data.numbers_entered.join(', ')}`);
+      toast.success(`Entered! Your numbers: ${r.data.numbers_entered.join(', ')}`);
     },
     onError: (err) => toast.error(err.response?.data?.error || 'Failed to enter draw')
   });
@@ -72,7 +72,7 @@ export default function DrawsPage() {
               </div>
               {draw && (
                 <span className={draw.status === 'completed' ? 'badge-success' : 'badge-warning'}>
-                  {draw.status === 'completed' ? '✓ Completed' : '🟢 Open'}
+                  {draw.status === 'completed' ? 'Completed' : 'Open'}
                 </span>
               )}
             </div>
@@ -82,9 +82,9 @@ export default function DrawsPage() {
                 {/* Prize Pool */}
                 <div className="grid grid-cols-3 gap-4 mb-6">
                   {[
-                    { label: '5-Match Jackpot', amount: draw.five_match_pool, icon: '👑', cls: 'prize-gold' },
-                    { label: '4-Match Prize', amount: draw.four_match_pool, icon: '🥈', cls: 'prize-silver' },
-                    { label: '3-Match Prize', amount: draw.three_match_pool, icon: '🥉', cls: 'prize-bronze' },
+                    { label: '5-Match Jackpot', amount: draw.five_match_pool, icon: '★', cls: 'prize-gold' },
+                    { label: '4-Match Prize', amount: draw.four_match_pool, icon: '✦', cls: 'prize-silver' },
+                    { label: '3-Match Prize', amount: draw.three_match_pool, icon: '●', cls: 'prize-bronze' },
                   ].map((tier, i) => (
                     <div key={i} className={`${tier.cls} rounded-xl p-4 text-center`}>
                       <div className="text-xl mb-1">{tier.icon}</div>
@@ -110,9 +110,9 @@ export default function DrawsPage() {
                 {userEntry ? (
                   <div className="bg-brand-500/5 border border-brand-500/20 rounded-xl p-5">
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="badge-success">✓ Entered</span>
+                      <span className="badge-success">Entered</span>
                       {userEntry.is_winner && (
-                        <span className="badge-warning">🏆 Winner! ₹{userEntry.prize_amount?.toLocaleString('en-IN')}</span>
+                        <span className="badge-warning">★ Winner! ₹{userEntry.prize_amount?.toLocaleString('en-IN')}</span>
                       )}
                     </div>
                     <div className="text-dark-400 text-sm mb-3">Your Numbers</div>
@@ -124,7 +124,7 @@ export default function DrawsPage() {
                     </div>
                     {draw.status === 'completed' && userEntry.match_count > 0 && (
                       <p className="text-brand-400 text-sm mt-3 font-semibold">
-                        🎯 {userEntry.match_count} match{userEntry.match_count !== 1 ? 'es' : ''}!
+                        ◎ {userEntry.match_count} match{userEntry.match_count !== 1 ? 'es' : ''}!
                         {userEntry.is_winner && ` Check your winnings.`}
                       </p>
                     )}
@@ -163,7 +163,7 @@ export default function DrawsPage() {
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                         >
-                          {enterMutation.isLoading ? 'Entering...' : `🎰 Enter ${currentMonth} Draw`}
+                          {enterMutation.isLoading ? 'Entering...' : `☆ Enter ${currentMonth} Draw`}
                         </motion.button>
                       </div>
                     )}
@@ -173,13 +173,13 @@ export default function DrawsPage() {
                 <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-sm">
                   <span className="text-dark-500">{draw.participant_count || 0} participants</span>
                   {draw.jackpot_amount > 0 && (
-                    <span className="text-amber-400">🔄 Jackpot rollover: ₹{draw.jackpot_amount.toLocaleString('en-IN')}</span>
+                    <span className="text-amber-400">↻ Jackpot rollover: ₹{draw.jackpot_amount.toLocaleString('en-IN')}</span>
                   )}
                 </div>
               </>
             ) : (
               <div className="text-center py-8">
-                <div className="text-4xl mb-3">🎰</div>
+                <div className="text-4xl mb-3">☆</div>
                 <p className="text-dark-400">No draw scheduled yet for {currentMonth} {currentYear}</p>
                 <p className="text-dark-600 text-sm mt-1">Check back later or contact support</p>
               </div>
