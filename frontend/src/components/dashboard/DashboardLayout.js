@@ -1,214 +1,211 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useQuery } from 'react-query';
+import Head from 'next/head';
 import { motion, AnimatePresence } from 'framer-motion';
+import gsap from 'gsap';
 import useAuthStore from '../../context/authStore';
-import { notificationsAPI } from '../../utils/api';
 
 const USER_NAV = [
   { href: '/dashboard', label: 'Overview', icon: '📊' },
-  { href: '/dashboard/scores', label: 'My Scores', icon: '⛳' },
+  { href: '/dashboard/scores', label: 'My Scores', icon: '🎯' },
   { href: '/dashboard/draws', label: 'Draws', icon: '🎰' },
   { href: '/dashboard/winnings', label: 'Winnings', icon: '🏆' },
-  { href: '/dashboard/charity', label: 'My Charity', icon: '💚' },
+  { href: '/dashboard/charity', label: 'Charity', icon: '💚' },
   { href: '/dashboard/subscription', label: 'Subscription', icon: '💳' },
   { href: '/dashboard/profile', label: 'Profile', icon: '👤' },
 ];
 
 const ADMIN_NAV = [
   { href: '/admin', label: 'Dashboard', icon: '📊' },
-  { href: '/admin/users', label: 'Users', icon: '👥' },
   { href: '/admin/draws', label: 'Draws', icon: '🎰' },
   { href: '/admin/winners', label: 'Winners', icon: '🏆' },
   { href: '/admin/charities', label: 'Charities', icon: '💚' },
+  { href: '/admin/users', label: 'Users', icon: '👥' },
   { href: '/admin/subscriptions', label: 'Subscriptions', icon: '💳' },
   { href: '/admin/analytics', label: 'Analytics', icon: '📈' },
 ];
 
+const pageVariants = {
+  initial: { opacity: 0, y: 12, filter: 'blur(4px)' },
+  enter: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] } },
+  exit: { opacity: 0, y: -8, transition: { duration: 0.2 } },
+};
+
 export default function DashboardLayout({ children, title }) {
   const router = useRouter();
-  const { user, logout, isLoading, isAuthenticated } = useAuthStore();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
-
-  const { data: notifData } = useQuery('notifications', notificationsAPI.getAll, {
-    enabled: isAuthenticated,
-    select: (r) => r.data,
-    refetchInterval: 60000,
-  });
+  const { user, logout, isAuthenticated } = useAuthStore();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isAdmin = router.pathname.startsWith('/admin');
+  const nav = isAdmin ? ADMIN_NAV : USER_NAV;
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push(`/login?redirect=${router.pathname}`);
+    if (!isAuthenticated) {
+      router.push('/login');
     }
-  }, [isLoading, isAuthenticated]);
+  }, [isAuthenticated, router]);
 
-  if (isLoading || !user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (isAdmin && user?.role !== 'admin') {
+      router.push('/dashboard');
+    }
+  }, [isAdmin, user, router]);
 
-  const isAdmin = user.role === 'admin';
-  const navItems = isAdmin ? ADMIN_NAV : USER_NAV;
-  const unreadCount = notifData?.unreadCount || 0;
+  const handleLogout = () => {
+    logout();
+    router.push('/');
+  };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 flex-col transition-transform duration-300 lg:translate-x-0 lg:flex ${mobileOpen ? 'translate-x-0 flex' : '-translate-x-full hidden lg:flex'}`}
-        style={{ background: 'rgba(6,8,19,0.95)', backdropFilter: 'blur(20px)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+    <>
+      <Head>
+        <title>{title ? `${title} — GolfPools` : 'GolfPools Dashboard'}</title>
+      </Head>
 
-        {/* Logo */}
-        <div className="flex items-center gap-2 px-6 py-5 border-b border-white/5">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-2xl">⛳</span>
-            <span className="font-display tracking-widest text-white text-lg">GOLFCHARITY</span>
-          </Link>
-        </div>
-
-        {/* User info */}
-        <div className="px-4 py-4 border-b border-white/5">
-          <div className="glass-card px-4 py-3 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-dark-950 font-bold text-sm">
-              {user.first_name?.[0]}{user.last_name?.[0]}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-white text-sm font-semibold truncate">{user.first_name} {user.last_name}</div>
-              <div className="text-dark-500 text-xs truncate">{user.email}</div>
-            </div>
-            {isAdmin && <span className="badge-warning text-xs">Admin</span>}
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 px-4 py-4 overflow-y-auto">
-          <div className="space-y-1">
-            {navItems.map((item) => {
-              const isActive = router.pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`sidebar-link ${isActive ? 'sidebar-link-active' : ''}`}
-                  onClick={() => setMobileOpen(false)}
-                >
-                  <span>{item.icon}</span>
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-        </nav>
-
-        {/* Logout */}
-        <div className="px-4 py-4 border-t border-white/5">
-          <button
-            onClick={() => { logout(); router.push('/'); }}
-            className="sidebar-link w-full text-left"
-          >
-            <span>🚪</span>
-            Sign Out
-          </button>
-        </div>
-      </aside>
-
-      {/* Mobile overlay */}
-      {mobileOpen && (
-        <div className="fixed inset-0 bg-black/60 z-40 lg:hidden" onClick={() => setMobileOpen(false)} />
-      )}
-
-      {/* Main content */}
-      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
-        {/* Top bar */}
-        <header className="sticky top-0 z-30 flex items-center justify-between px-6 py-4"
-          style={{ background: 'rgba(6,8,19,0.9)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-
-          <div className="flex items-center gap-4">
-            <button
-              className="lg:hidden text-dark-400 hover:text-white"
-              onClick={() => setMobileOpen(true)}
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-            <h1 className="text-white font-semibold text-lg">{title}</h1>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Notifications */}
-            <div className="relative">
-              <button
-                onClick={() => setNotifOpen(!notifOpen)}
-                className="relative p-2 text-dark-400 hover:text-white transition-colors"
+      <div className="min-h-screen flex">
+        {/* Sidebar */}
+        <aside
+          className={`fixed inset-y-0 left-0 z-40 w-64 lg:static lg:translate-x-0 transform transition-transform duration-300 ${
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+          style={{
+            background: 'rgba(10,14,40,0.95)',
+            backdropFilter: 'blur(20px)',
+            borderRight: '1px solid rgba(255,255,255,0.05)',
+          }}
+        >
+          <div className="flex flex-col h-full p-5">
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-2 mb-8 group">
+              <motion.span
+                className="text-2xl"
+                animate={{ y: [0, -3, 0] }}
+                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-                {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 bg-brand-500 rounded-full text-dark-950 text-xs font-bold flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
-              </button>
+                ⛳
+              </motion.span>
+              <span className="font-display tracking-widest text-lg text-white group-hover:text-brand-400 transition-colors">
+                GOLFPOOLS
+              </span>
+            </Link>
 
-              <AnimatePresence>
-                {notifOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="absolute right-0 mt-2 w-80 glass-card overflow-hidden"
-                    style={{ zIndex: 100 }}
-                  >
-                    <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
-                      <span className="text-white font-semibold text-sm">Notifications</span>
-                      {unreadCount > 0 && (
-                        <button
-                          onClick={notificationsAPI.markAllRead}
-                          className="text-brand-400 text-xs hover:text-brand-300"
-                        >Mark all read</button>
+            {/* Role badge */}
+            {isAdmin && (
+              <div className="mb-6 px-3">
+                <span className="badge-warning text-xs">Admin Panel</span>
+              </div>
+            )}
+
+            {/* Navigation */}
+            <nav className="flex-1 space-y-1">
+              {nav.map((item) => {
+                const active = router.pathname === item.href;
+                return (
+                  <Link key={item.href} href={item.href}>
+                    <motion.div
+                      className={active ? 'sidebar-link sidebar-link-active' : 'sidebar-link'}
+                      whileHover={{ x: active ? 0 : 4, transition: { duration: 0.2 } }}
+                    >
+                      <span className="text-lg">{item.icon}</span>
+                      <span>{item.label}</span>
+                      {active && (
+                        <motion.div
+                          className="absolute left-0 top-0 bottom-0 w-0.5 bg-brand-500 rounded-r"
+                          layoutId="activeNav"
+                        />
                       )}
-                    </div>
-                    <div className="max-h-64 overflow-y-auto">
-                      {notifData?.notifications?.length > 0 ? (
-                        notifData.notifications.slice(0, 10).map(n => (
-                          <div key={n.id} className={`px-4 py-3 border-b border-white/3 hover:bg-white/3 transition-colors ${!n.is_read ? 'bg-brand-500/5' : ''}`}>
-                            <div className="flex gap-2">
-                              {!n.is_read && <span className="w-2 h-2 mt-1 rounded-full bg-brand-500 flex-shrink-0" />}
-                              <div>
-                                <div className="text-white text-xs font-medium">{n.title}</div>
-                                <div className="text-dark-400 text-xs mt-0.5">{n.message}</div>
-                              </div>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="px-4 py-6 text-center text-dark-500 text-sm">No notifications yet</div>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    </motion.div>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            {/* Switch role link */}
+            {user?.role === 'admin' && (
+              <Link
+                href={isAdmin ? '/dashboard' : '/admin'}
+                className="flex items-center gap-2 px-4 py-2 text-dark-500 hover:text-brand-400 text-sm transition-colors mb-2"
+              >
+                <span>🔄</span>
+                <span>Switch to {isAdmin ? 'User' : 'Admin'}</span>
+              </Link>
+            )}
+
+            {/* User info + logout */}
+            <div className="glass-card p-4 mt-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-dark-950 font-bold text-sm">
+                  {user?.first_name?.[0]}{user?.last_name?.[0]}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-white text-sm font-medium truncate">
+                    {user?.first_name} {user?.last_name}
+                  </div>
+                  <div className="text-dark-500 text-xs truncate">{user?.email}</div>
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-3 py-2 text-dark-400 hover:text-red-400 text-sm transition-colors rounded-lg hover:bg-white/5"
+              >
+                Sign Out →
+              </button>
             </div>
           </div>
-        </header>
+        </aside>
 
-        {/* Page content */}
-        <main className="flex-1 p-6">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
+        {/* Mobile overlay */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        {/* Main content */}
+        <main className="flex-1 min-w-0">
+          {/* Top bar */}
+          <header
+            className="sticky top-0 z-20 flex items-center justify-between px-6 py-4"
+            style={{
+              background: 'rgba(6,8,19,0.7)',
+              backdropFilter: 'blur(12px)',
+              borderBottom: '1px solid rgba(255,255,255,0.05)',
+            }}
           >
-            {children}
-          </motion.div>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="lg:hidden text-dark-300 hover:text-white text-xl"
+              >
+                ☰
+              </button>
+              <h1 className="text-white font-bold text-lg">{title}</h1>
+            </div>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/dashboard/profile"
+                className="w-8 h-8 rounded-lg bg-dark-800 flex items-center justify-center text-dark-400 hover:text-white transition-colors"
+              >
+                ⚙️
+              </Link>
+            </div>
+          </header>
+
+          {/* Page content with transition */}
+          <div className="p-6">
+            <motion.div
+              key={router.pathname}
+              initial="initial"
+              animate="enter"
+              exit="exit"
+              variants={pageVariants}
+            >
+              {children}
+            </motion.div>
+          </div>
         </main>
       </div>
-    </div>
+    </>
   );
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useForm } from 'react-hook-form';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
 import { winnersAPI } from '../../utils/api';
@@ -25,56 +25,104 @@ function ActionModal({ winner, type, onClose, onSubmit, loading }) {
   const isReject = type === 'reject';
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+    <AnimatePresence>
       <motion.div
-        className="glass-card p-6 w-full max-w-md"
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
+        className="modal-overlay-glass"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
       >
-        <h3 className="text-white font-semibold text-lg mb-4">
-          {isPaid ? '💰 Mark as Paid' : isApprove ? '✅ Approve Winner' : '❌ Reject Claim'}
-        </h3>
+        <motion.div
+          className="glass-card p-8 w-full max-w-md relative"
+          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.9, opacity: 0, y: 20 }}
+          transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+          onClick={e => e.stopPropagation()}
+          style={{
+            boxShadow: '0 24px 80px rgba(0,0,0,0.5), 0 0 60px rgba(0,198,255,0.1)',
+          }}
+        >
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-dark-500 hover:text-white transition-colors"
+          >✕</button>
 
-        <div className="glass-card p-4 mb-4">
-          <div className="text-white font-medium">{winner.users?.first_name} {winner.users?.last_name}</div>
-          <div className="text-dark-400 text-sm">{winner.prize_category} — ₹{(winner.prize_amount || 0).toLocaleString('en-IN')}</div>
-        </div>
+          <h3 className="text-white font-semibold text-lg mb-5">
+            {isPaid ? '💰 Mark as Paid' : isApprove ? '✅ Approve Winner' : '❌ Reject Claim'}
+          </h3>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {(isApprove || isReject) && (
-            <div>
-              <label className="block text-sm text-dark-300 mb-2">Admin Notes</label>
-              <textarea
-                {...register('admin_notes')}
-                className="input-field resize-none"
-                rows={3}
-                placeholder={isReject ? 'Reason for rejection...' : 'Optional notes...'}
-              />
+          {/* Winner info card */}
+          <div className="glass-card p-4 mb-5">
+            <div className="flex items-center gap-3">
+              <motion.span
+                className="text-2xl"
+                animate={{ y: [0, -3, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                {winner.prize_category === '5-match' ? '👑' : winner.prize_category === '4-match' ? '🥈' : '🥉'}
+              </motion.span>
+              <div>
+                <div className="text-white font-medium">{winner.users?.first_name} {winner.users?.last_name}</div>
+                <div className="text-dark-400 text-sm">{winner.prize_category} — <span className="gradient-text-gold font-bold">₹{(winner.prize_amount || 0).toLocaleString('en-IN')}</span></div>
+              </div>
             </div>
-          )}
-          {isPaid && (
-            <div>
-              <label className="block text-sm text-dark-300 mb-2">Payment Reference</label>
-              <input
-                {...register('payment_reference', { required: 'Reference is required' })}
-                className="input-field"
-                placeholder="UTR/Transaction ID"
-              />
-            </div>
-          )}
-          <div className="flex gap-3">
-            <button type="button" onClick={onClose} className="btn-secondary flex-1 py-2.5">Cancel</button>
-            <button
-              type="submit"
-              disabled={loading}
-              className={`flex-1 py-2.5 ${isReject ? 'btn-danger' : 'btn-primary'} disabled:opacity-50`}
-            >
-              {loading ? 'Processing...' : isPaid ? 'Confirm Paid' : isApprove ? 'Approve' : 'Reject'}
-            </button>
           </div>
-        </form>
+
+          {/* Proof preview */}
+          {winner.proof_url && (
+            <div className="mb-5">
+              <label className="block text-sm text-dark-400 mb-2">Proof Submitted</label>
+              <a
+                href={winner.proof_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block glass-card p-3 hover:border-brand-500/30 transition-colors text-center"
+              >
+                <span className="text-brand-400 text-sm hover:text-brand-300">🔗 View Proof Document →</span>
+              </a>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {(isApprove || isReject) && (
+              <div>
+                <label className="block text-sm text-dark-300 mb-2">Admin Notes</label>
+                <textarea
+                  {...register('admin_notes')}
+                  className="input-field resize-none"
+                  rows={3}
+                  placeholder={isReject ? 'Reason for rejection...' : 'Optional notes...'}
+                />
+              </div>
+            )}
+            {isPaid && (
+              <div>
+                <label className="block text-sm text-dark-300 mb-2">Payment Reference</label>
+                <input
+                  {...register('payment_reference', { required: 'Reference is required' })}
+                  className="input-field"
+                  placeholder="UTR/Transaction ID"
+                />
+              </div>
+            )}
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={onClose} className="btn-secondary flex-1 py-2.5">Cancel</button>
+              <motion.button
+                type="submit"
+                disabled={loading}
+                className={`flex-1 py-2.5 ${isReject ? 'btn-danger' : 'btn-primary'} disabled:opacity-50`}
+                whileHover={{ scale: loading ? 1 : 1.02 }}
+                whileTap={{ scale: loading ? 1 : 0.98 }}
+              >
+                {loading ? 'Processing...' : isPaid ? 'Confirm Paid' : isApprove ? 'Approve' : 'Reject'}
+              </motion.button>
+            </div>
+          </form>
+        </motion.div>
       </motion.div>
-    </div>
+    </AnimatePresence>
   );
 }
 
@@ -133,7 +181,7 @@ export default function AdminWinnersPage() {
         {/* Status filter tabs */}
         <div className="flex flex-wrap gap-2">
           {STATUS_TABS.map(tab => (
-            <button
+            <motion.button
               key={tab.key}
               onClick={() => setStatusFilter(tab.key)}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
@@ -141,10 +189,12 @@ export default function AdminWinnersPage() {
                   ? 'bg-brand-500/20 border border-brand-500/40 text-brand-300'
                   : 'text-dark-400 hover:text-white border border-transparent hover:border-white/10'
               }`}
+              whileHover={{ y: -1 }}
+              whileTap={{ scale: 0.97 }}
             >
               {tab.label}
               {tab.key === '' && winners && <span className="ml-1 text-dark-500">({winners.length})</span>}
-            </button>
+            </motion.button>
           ))}
         </div>
 
@@ -163,9 +213,15 @@ export default function AdminWinnersPage() {
                   <th className="px-6 py-3 text-right text-dark-400 text-xs uppercase">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/3">
-                {winners?.map(winner => (
-                  <tr key={winner.id} className="hover:bg-white/2 transition-colors">
+              <tbody className="divide-y divide-white/[0.03]">
+                {winners?.map((winner, i) => (
+                  <motion.tr
+                    key={winner.id}
+                    className="hover:bg-white/[0.02] transition-colors"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                  >
                     <td className="px-6 py-4">
                       <div className="text-white font-medium text-sm">
                         {winner.users?.first_name} {winner.users?.last_name}
@@ -238,7 +294,7 @@ export default function AdminWinnersPage() {
                         )}
                       </div>
                     </td>
-                  </tr>
+                  </motion.tr>
                 ))}
               </tbody>
             </table>

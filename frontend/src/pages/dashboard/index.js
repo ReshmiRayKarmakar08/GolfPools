@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import gsap from 'gsap';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
-import { dashboardAPI, scoresAPI } from '../../utils/api';
+import { scoresAPI, drawsAPI, winnersAPI, subscriptionsAPI } from '../../utils/api';
 import useAuthStore from '../../context/authStore';
 
 function CountUpStat({ value, prefix = '', suffix = '', label, icon, link, delay = 0 }) {
@@ -58,17 +58,36 @@ function CountUpStat({ value, prefix = '', suffix = '', label, icon, link, delay
 export default function DashboardHome() {
   const { user } = useAuthStore();
 
-  const { data: dashData } = useQuery('dashboardData', dashboardAPI.getOverview, {
-    select: (r) => r.data,
-  });
-
   const { data: scoresData } = useQuery('scores', scoresAPI.getScores, {
     select: (r) => r.data.scores,
   });
 
-  const stats = dashData?.stats || {};
-  const draw = dashData?.currentDraw;
-  const recentWins = dashData?.recentWinnings || [];
+  const { data: scoreStats } = useQuery('scoreStats', scoresAPI.getStats, {
+    select: (r) => r.data.stats,
+  });
+
+  const { data: currentDraw } = useQuery('currentDraw', drawsAPI.getCurrent, {
+    select: (r) => r.data.draw,
+    retry: false,
+  });
+
+  const { data: recentWins } = useQuery('myWinnings', winnersAPI.getMy, {
+    select: (r) => r.data.winnings || [],
+    retry: false,
+  });
+
+  const { data: sub } = useQuery('subscription', subscriptionsAPI.getCurrent, {
+    select: (r) => r.data.subscription,
+    retry: false,
+  });
+
+  const stats = {
+    scoreCount: scoresData?.length || 0,
+    drawsEntered: 0,
+    totalWinnings: (recentWins || []).reduce((s, w) => s + (w.prize_amount || 0), 0),
+    charityContributed: 0,
+  };
+  const draw = currentDraw;
 
   return (
     <DashboardLayout title="Dashboard">
@@ -197,7 +216,7 @@ export default function DashboardHome() {
         </div>
 
         {/* Recent Winnings */}
-        {recentWins.length > 0 && (
+        {recentWins?.length > 0 && (
           <motion.div
             className="glass-card p-6"
             initial={{ opacity: 0, y: 20 }}

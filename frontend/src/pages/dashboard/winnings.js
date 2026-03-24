@@ -45,7 +45,7 @@ export default function WinningsPage() {
   const [uploadId, setUploadId] = useState(null);
   const [proofFile, setProofFile] = useState(null);
 
-  const { data: winnings, isLoading } = useQuery('myWinnings', winnersAPI.getMine, {
+  const { data: winnings, isLoading } = useQuery('myWinnings', winnersAPI.getMy, {
     select: (r) => r.data.winnings,
   });
 

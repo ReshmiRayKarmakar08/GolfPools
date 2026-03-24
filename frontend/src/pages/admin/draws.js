@@ -8,6 +8,34 @@ import { drawsAPI } from '../../utils/api';
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
+function DrawTypeToggle({ value, onChange }) {
+  return (
+    <div className="draw-type-toggle relative">
+      <div
+        className="draw-type-slider"
+        style={{
+          left: value === 'random' ? '4px' : '50%',
+          width: 'calc(50% - 4px)',
+        }}
+      />
+      <button
+        type="button"
+        onClick={() => onChange('random')}
+        className={value === 'random' ? 'active' : ''}
+      >
+        🎲 Random
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange('algorithm')}
+        className={value === 'algorithm' ? 'active' : ''}
+      >
+        🧮 Algorithm
+      </button>
+    </div>
+  );
+}
+
 export default function AdminDrawsPage() {
   const qc = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
@@ -18,13 +46,15 @@ export default function AdminDrawsPage() {
     select: r => r.data.draws
   });
 
-  const { register, handleSubmit, reset } = useForm({
+  const { register, handleSubmit, reset, watch, setValue } = useForm({
     defaultValues: {
       draw_month: new Date().getMonth() + 1,
       draw_year: new Date().getFullYear(),
       draw_type: 'random'
     }
   });
+
+  const drawType = watch('draw_type');
 
   const createMutation = useMutation(drawsAPI.createDraw, {
     onSuccess: () => {
@@ -49,7 +79,7 @@ export default function AdminDrawsPage() {
       setSimResult(r.data.simulation);
       toast.success('Simulation complete');
     },
-    onError: (err) => toast.error('Simulation failed')
+    onError: () => toast.error('Simulation failed')
   });
 
   return (
@@ -61,43 +91,53 @@ export default function AdminDrawsPage() {
             <h2 className="text-white font-bold text-xl">Monthly Draws</h2>
             <p className="text-dark-400 text-sm mt-1">Create, configure and execute monthly prize draws</p>
           </div>
-          <button onClick={() => setShowCreate(!showCreate)} className="btn-primary px-5 py-2.5">
+          <motion.button
+            onClick={() => setShowCreate(!showCreate)}
+            className="btn-primary px-5 py-2.5"
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+          >
             + New Draw
-          </button>
+          </motion.button>
         </div>
 
         {/* Create form */}
         <AnimatePresence>
           {showCreate && (
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
+              initial={{ opacity: 0, height: 0, y: -10 }}
+              animate={{ opacity: 1, height: 'auto', y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -10 }}
               className="overflow-hidden"
             >
               <div className="glass-card p-6 border border-brand-500/20">
-                <h3 className="text-white font-semibold mb-4">Create New Draw</h3>
-                <form onSubmit={handleSubmit(data => createMutation.mutate(data))} className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <label className="block text-sm text-dark-300 mb-2">Month</label>
-                    <select {...register('draw_month', { valueAsNumber: true })} className="input-field">
-                      {MONTH_NAMES.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-                    </select>
+                <h3 className="text-white font-semibold mb-5">Create New Draw</h3>
+                <form onSubmit={handleSubmit(data => createMutation.mutate(data))} className="space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm text-dark-300 mb-2">Month</label>
+                      <select {...register('draw_month', { valueAsNumber: true })} className="input-field">
+                        {MONTH_NAMES.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm text-dark-300 mb-2">Year</label>
+                      <input {...register('draw_year', { valueAsNumber: true })} type="number" className="input-field" min="2024" />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-dark-300 mb-2">Draw Type</label>
+                      <DrawTypeToggle
+                        value={drawType}
+                        onChange={(v) => setValue('draw_type', v)}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm text-dark-300 mb-2">Year</label>
-                    <input {...register('draw_year', { valueAsNumber: true })} type="number" className="input-field" min="2024" />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-dark-300 mb-2">Draw Type</label>
-                    <select {...register('draw_type')} className="input-field">
-                      <option value="random">Random</option>
-                      <option value="algorithm">Algorithm</option>
-                    </select>
-                  </div>
-                  <div className="flex items-end">
-                    <button type="submit" disabled={createMutation.isLoading} className="btn-primary w-full py-3">
-                      {createMutation.isLoading ? 'Creating...' : 'Create'}
+                  <div className="flex gap-3">
+                    <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary flex-1 py-2.5">
+                      Cancel
+                    </button>
+                    <button type="submit" disabled={createMutation.isLoading} className="btn-primary flex-1 py-2.5">
+                      {createMutation.isLoading ? 'Creating...' : 'Create Draw'}
                     </button>
                   </div>
                 </form>
@@ -107,40 +147,42 @@ export default function AdminDrawsPage() {
         </AnimatePresence>
 
         {/* Simulation result */}
-        {simResult && (
-          <div className="glass-card p-6 border border-brand-500/20">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-white font-semibold">🔬 Simulation Result</h3>
-              <button onClick={() => setSimResult(null)} className="text-dark-500 hover:text-white">✕</button>
-            </div>
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-white">{simResult.total_participants}</div>
-                <div className="text-dark-500 text-xs">Participants</div>
+        <AnimatePresence>
+          {simResult && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="glass-card p-6 border border-brand-500/20"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-white font-semibold">🔬 Simulation Result</h3>
+                <button onClick={() => setSimResult(null)} className="text-dark-500 hover:text-white">✕</button>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-400">{simResult.five_match_count}</div>
-                <div className="text-dark-500 text-xs">5-Match</div>
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+                {[
+                  { label: 'Participants', value: simResult.total_participants, color: 'text-white' },
+                  { label: '5-Match', value: simResult.five_match_count, color: 'text-yellow-400' },
+                  { label: '4-Match', value: simResult.four_match_count, color: 'text-gray-400' },
+                  { label: '3-Match', value: simResult.three_match_count, color: 'text-amber-600' },
+                  { label: '5-Match Prize', value: `₹${(simResult.estimated_five_prize || 0).toLocaleString('en-IN')}`, color: 'text-brand-400' },
+                  { label: 'Rollover', value: `₹${(simResult.rollover || 0).toLocaleString('en-IN')}`, color: 'text-green-400' },
+                ].map((item, i) => (
+                  <motion.div
+                    key={i}
+                    className="text-center"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                  >
+                    <div className={`text-2xl font-bold ${item.color}`}>{item.value}</div>
+                    <div className="text-dark-500 text-xs">{item.label}</div>
+                  </motion.div>
+                ))}
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-400">{simResult.four_match_count}</div>
-                <div className="text-dark-500 text-xs">4-Match</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-amber-600">{simResult.three_match_count}</div>
-                <div className="text-dark-500 text-xs">3-Match</div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm font-bold text-brand-400">₹{(simResult.estimated_five_prize || 0).toLocaleString('en-IN')}</div>
-                <div className="text-dark-500 text-xs">5-Match Prize</div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm font-bold text-green-400">₹{(simResult.rollover || 0).toLocaleString('en-IN')}</div>
-                <div className="text-dark-500 text-xs">Rollover</div>
-              </div>
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Draws table */}
         <div className="glass-card overflow-hidden">
@@ -160,9 +202,15 @@ export default function AdminDrawsPage() {
                   <th className="px-6 py-3 text-right text-dark-400 text-xs uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/3">
-                {draws?.map(draw => (
-                  <tr key={draw.id} className="hover:bg-white/2 transition-colors">
+              <tbody className="divide-y divide-white/[0.03]">
+                {draws?.map((draw, i) => (
+                  <motion.tr
+                    key={draw.id}
+                    className="hover:bg-white/[0.02] transition-colors"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: i * 0.05 }}
+                  >
                     <td className="px-6 py-4">
                       <div className="text-white font-medium">
                         {MONTH_NAMES[draw.draw_month - 1].slice(0, 3)} {draw.draw_year}
@@ -190,10 +238,8 @@ export default function AdminDrawsPage() {
                     <td className="px-6 py-4">
                       {draw.winning_numbers ? (
                         <div className="flex gap-1">
-                          {draw.winning_numbers.map((n, i) => (
-                            <span key={i} className="w-7 h-7 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-300 text-xs font-mono font-bold">
-                              {n}
-                            </span>
+                          {draw.winning_numbers.map((n, j) => (
+                            <span key={j} className="number-ball number-ball-winning w-7 h-7 text-xs">{n}</span>
                           ))}
                         </div>
                       ) : <span className="text-dark-600 text-sm">—</span>}
@@ -227,7 +273,7 @@ export default function AdminDrawsPage() {
                         )}
                       </div>
                     </td>
-                  </tr>
+                  </motion.tr>
                 ))}
               </tbody>
             </table>
