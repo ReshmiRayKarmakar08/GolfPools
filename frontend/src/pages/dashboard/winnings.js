@@ -1,211 +1,248 @@
-import { useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import gsap from 'gsap';
 import toast from 'react-hot-toast';
+import { format } from 'date-fns';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
 import { winnersAPI } from '../../utils/api';
 
-const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const STATUS_STEPS = ['pending', 'verified', 'approved', 'paid'];
 
-const STATUS_CONFIG = {
-  pending: { label: 'Pending', color: 'badge-warning', icon: '⏳' },
-  verified: { label: 'Under Review', color: 'badge-info', icon: '🔍' },
-  approved: { label: 'Approved', color: 'badge-success', icon: '✅' },
-  paid: { label: 'Paid', color: 'badge-success', icon: '💰' },
-  rejected: { label: 'Rejected', color: 'badge-error', icon: '❌' },
-};
-
-function ProofUploadModal({ winner, onClose, onUpload }) {
-  const [proofUrl, setProofUrl] = useState('');
+function StatusTimeline({ currentStatus }) {
+  const idx = STATUS_STEPS.indexOf(currentStatus);
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <motion.div
-        className="glass-card p-6 w-full max-w-md"
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-      >
-        <h3 className="text-white font-semibold text-lg mb-2">Upload Proof</h3>
-        <p className="text-dark-400 text-sm mb-4">
-          Upload a screenshot of your score card from your golf club or scoring app.
-        </p>
-        <div className="mb-4">
-          <label className="block text-sm text-dark-300 mb-2">Screenshot URL</label>
-          <input
-            type="url"
-            value={proofUrl}
-            onChange={(e) => setProofUrl(e.target.value)}
-            className="input-field"
-            placeholder="https://..."
-          />
-          <p className="text-dark-600 text-xs mt-1">
-            Upload to Imgur, Google Drive, etc. and paste the link here
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <button onClick={onClose} className="btn-secondary flex-1 py-2.5">Cancel</button>
-          <button
-            onClick={() => proofUrl && onUpload(winner.id, proofUrl)}
-            disabled={!proofUrl}
-            className="btn-primary flex-1 py-2.5 disabled:opacity-50"
+    <div className="flex items-center gap-1 mt-2">
+      {STATUS_STEPS.map((step, i) => (
+        <div key={step} className="flex items-center gap-1">
+          <motion.div
+            className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i <= idx
+              ? 'bg-brand-500 text-dark-950'
+              : 'bg-dark-700 text-dark-500'}`}
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: i * 0.15, type: 'spring' }}
           >
-            Submit Proof
-          </button>
+            {i <= idx ? '✓' : i + 1}
+          </motion.div>
+          {i < STATUS_STEPS.length - 1 && (
+            <motion.div
+              className={`w-6 h-0.5 ${i < idx ? 'bg-brand-500' : 'bg-dark-700'}`}
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ delay: i * 0.15 + 0.1 }}
+              style={{ transformOrigin: 'left' }}
+            />
+          )}
         </div>
-      </motion.div>
+      ))}
     </div>
   );
 }
 
 export default function WinningsPage() {
   const qc = useQueryClient();
-  const [proofModal, setProofModal] = useState(null);
+  const [uploadId, setUploadId] = useState(null);
+  const [proofFile, setProofFile] = useState(null);
 
-  const { data: winners, isLoading } = useQuery('myWinnings', winnersAPI.getMy, {
-    select: r => r.data.winners
+  const { data: winnings, isLoading } = useQuery('myWinnings', winnersAPI.getMine, {
+    select: (r) => r.data.winnings,
   });
 
   const uploadMutation = useMutation(
-    ({ id, url }) => winnersAPI.uploadProof(id, { proof_url: url }),
+    ({ id, file }) => {
+      const fd = new FormData();
+      fd.append('proof', file);
+      return winnersAPI.uploadProof(id, fd);
+    },
     {
       onSuccess: () => {
         qc.invalidateQueries('myWinnings');
-        toast.success('Proof submitted! Admin will review shortly.');
-        setProofModal(null);
+        toast.success('Proof uploaded!');
+        setUploadId(null);
+        setProofFile(null);
       },
-      onError: (err) => toast.error(err.response?.data?.error || 'Failed to upload proof')
+      onError: (err) => toast.error(err.response?.data?.error || 'Upload failed'),
     }
   );
 
-  const totalWon = winners?.filter(w => w.payment_status !== 'rejected').reduce((s, w) => s + (w.prize_amount || 0), 0) || 0;
-  const paidOut = winners?.filter(w => w.payment_status === 'paid').reduce((s, w) => s + (w.prize_amount || 0), 0) || 0;
+  // Count-up refs
+  const totalRef = useRef(null);
+  const paidRef = useRef(null);
+
+  useEffect(() => {
+    if (!winnings) return;
+    const total = winnings.reduce((s, w) => s + (w.prize_amount || 0), 0);
+    const paid = winnings.filter((w) => w.payment_status === 'paid').reduce((s, w) => s + (w.prize_amount || 0), 0);
+
+    const animateRef = (ref, val) => {
+      if (!ref.current) return;
+      const obj = { v: 0 };
+      gsap.to(obj, {
+        v: val,
+        duration: 1.5,
+        ease: 'power2.out',
+        delay: 0.3,
+        onUpdate: () => {
+          if (ref.current) ref.current.textContent = Math.round(obj.v).toLocaleString('en-IN');
+        },
+      });
+    };
+
+    animateRef(totalRef, total);
+    animateRef(paidRef, paid);
+  }, [winnings]);
 
   return (
-    <DashboardLayout title="My Winnings">
-      {proofModal && (
-        <ProofUploadModal
-          winner={proofModal}
-          onClose={() => setProofModal(null)}
-          onUpload={(id, url) => uploadMutation.mutate({ id, url })}
-        />
-      )}
-
-      <div className="max-w-2xl mx-auto">
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="glass-card p-5 text-center">
-            <div className="text-3xl font-bold gradient-text-gold font-mono">₹{totalWon.toLocaleString('en-IN')}</div>
-            <div className="text-dark-400 text-sm mt-1">Total Won</div>
-          </div>
-          <div className="glass-card p-5 text-center">
-            <div className="text-3xl font-bold text-green-400 font-mono">₹{paidOut.toLocaleString('en-IN')}</div>
-            <div className="text-dark-400 text-sm mt-1">Paid Out</div>
-          </div>
+    <DashboardLayout title="Winnings">
+      <div className="max-w-2xl mx-auto space-y-6">
+        {/* Summary stats */}
+        <div className="grid grid-cols-2 gap-4">
+          <motion.div
+            className="glass-card p-6 text-center floating-card"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div className="text-3xl font-bold font-mono gradient-text-gold mb-1">
+              ₹<span ref={totalRef}>0</span>
+            </div>
+            <div className="text-dark-400 text-sm">Total Won</div>
+          </motion.div>
+          <motion.div
+            className="glass-card p-6 text-center floating-card"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <div className="text-3xl font-bold font-mono text-green-400 mb-1">
+              ₹<span ref={paidRef}>0</span>
+            </div>
+            <div className="text-dark-400 text-sm">Paid Out</div>
+          </motion.div>
         </div>
 
-        {/* Winners list */}
+        {/* Winnings list */}
         {isLoading ? (
-          <div className="space-y-3">
-            {[1,2,3].map(i => <div key={i} className="glass-card h-28 shimmer" />)}
-          </div>
-        ) : winners && winners.length > 0 ? (
+          Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="glass-card h-32 shimmer" />
+          ))
+        ) : winnings && winnings.length > 0 ? (
           <div className="space-y-4">
-            {winners.map((winner, i) => {
-              const status = STATUS_CONFIG[winner.payment_status] || STATUS_CONFIG.pending;
-              const month = winner.monthly_draws?.draw_month;
-              const year = winner.monthly_draws?.draw_year;
-
-              return (
-                <motion.div
-                  key={winner.id}
-                  className="glass-card-hover p-5"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                >
-                  <div className="flex items-start justify-between mb-4">
+            {winnings.map((w, i) => (
+              <motion.div
+                key={w.id}
+                className="glass-card-hover p-6"
+                initial={{ opacity: 0, y: 30, filter: 'blur(4px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                transition={{ delay: i * 0.1, duration: 0.5 }}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <motion.span
+                      className="text-3xl"
+                      animate={{ y: [0, -4, 0] }}
+                      transition={{ duration: 2 + i * 0.3, repeat: Infinity }}
+                    >
+                      {w.prize_category === '5-match' ? '👑' : w.prize_category === '4-match' ? '🥈' : '🥉'}
+                    </motion.span>
                     <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-2xl">{winner.prize_category === '5-match' ? '👑' : winner.prize_category === '4-match' ? '🥈' : '🥉'}</span>
-                        <span className="text-white font-bold">{winner.prize_category} Winner</span>
-                      </div>
-                      <div className="text-dark-400 text-sm">
-                        {month ? `${MONTH_NAMES[month - 1]} ${year} Draw` : 'Draw'}
+                      <div className="text-white font-bold">{w.prize_category}</div>
+                      <div className="text-dark-500 text-sm">
+                        {w.monthly_draws
+                          ? `${new Date(0, w.monthly_draws.draw_month - 1).toLocaleString('default', { month: 'long' })} ${w.monthly_draws.draw_year}`
+                          : format(new Date(w.created_at), 'MMM d, yyyy')}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="gradient-text-gold font-bold text-xl font-mono">
-                        ₹{(winner.prize_amount || 0).toLocaleString('en-IN')}
-                      </div>
-                      <div className={`${status.color} mt-1`}>{status.icon} {status.label}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="gradient-text-gold font-bold text-2xl font-mono">
+                      ₹{(w.prize_amount || 0).toLocaleString('en-IN')}
                     </div>
+                    <span className={{
+                      pending: 'badge-warning',
+                      verified: 'badge-info',
+                      approved: 'badge-success',
+                      paid: 'badge-success',
+                      rejected: 'badge-error',
+                    }[w.payment_status] || 'badge-warning'}>
+                      {w.payment_status === 'paid' ? '✓ Paid' : w.payment_status}
+                    </span>
                   </div>
+                </div>
 
-                  {/* Status timeline */}
-                  <div className="flex items-center gap-2 mb-4">
-                    {['pending', 'verified', 'approved', 'paid'].map((s, si) => {
-                      const statuses = ['pending', 'verified', 'approved', 'paid'];
-                      const currentIdx = statuses.indexOf(winner.payment_status);
-                      const isActive = si <= currentIdx && winner.payment_status !== 'rejected';
-                      return (
-                        <div key={s} className="flex items-center gap-2 flex-1">
-                          <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-brand-500' : 'bg-dark-700'}`} />
-                          <div className={`h-0.5 flex-1 ${si < 3 ? (isActive ? 'bg-brand-500/30' : 'bg-dark-700') : 'hidden'}`} />
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-dark-600">
-                    <span>Pending</span><span>Reviewed</span><span>Approved</span><span>Paid</span>
-                  </div>
+                {/* Status timeline */}
+                <StatusTimeline currentStatus={w.payment_status} />
 
-                  {/* Admin notes */}
-                  {winner.admin_notes && (
-                    <div className="mt-3 p-3 rounded-lg bg-white/3 border border-white/5">
-                      <div className="text-dark-400 text-xs mb-1">Admin Note:</div>
-                      <div className="text-white text-sm">{winner.admin_notes}</div>
-                    </div>
-                  )}
-
-                  {/* Actions */}
-                  {winner.payment_status === 'pending' && !winner.proof_url && (
-                    <div className="mt-4">
-                      <p className="text-dark-400 text-sm mb-3">
-                        To claim your prize, please upload proof of your score card.
-                      </p>
-                      <button
-                        onClick={() => setProofModal(winner)}
-                        className="btn-primary text-sm px-5 py-2.5"
+                {/* Matched numbers */}
+                {w.matched_numbers && (
+                  <div className="flex items-center gap-1.5 mt-3">
+                    <span className="text-dark-500 text-xs mr-1">Matched:</span>
+                    {w.matched_numbers.map((n, j) => (
+                      <motion.span
+                        key={j}
+                        className="number-ball number-ball-winning w-7 h-7 text-xs"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.3 + j * 0.1, type: 'spring' }}
                       >
-                        📎 Upload Score Proof
+                        {n}
+                      </motion.span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Proof section */}
+                {w.payment_status === 'pending' && !w.proof_url && (
+                  <div className="mt-4 pt-4 border-t border-white/5">
+                    {uploadId === w.id ? (
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => setProofFile(e.target.files?.[0])}
+                          className="input-field text-sm flex-1"
+                        />
+                        <button
+                          onClick={() => proofFile && uploadMutation.mutate({ id: w.id, file: proofFile })}
+                          disabled={!proofFile || uploadMutation.isLoading}
+                          className="btn-primary text-sm px-4 py-2.5"
+                        >
+                          {uploadMutation.isLoading ? 'Uploading...' : 'Upload'}
+                        </button>
+                        <button
+                          onClick={() => { setUploadId(null); setProofFile(null); }}
+                          className="text-dark-500 hover:text-white"
+                        >✕</button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setUploadId(w.id)}
+                        className="btn-secondary text-sm w-full py-2.5"
+                      >
+                        📎 Upload Proof to Speed Up Verification
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                )}
 
-                  {winner.proof_url && (
-                    <div className="mt-3 flex items-center gap-2 text-sm">
-                      <span className="badge-info">📎 Proof uploaded</span>
-                      <a href={winner.proof_url} target="_blank" rel="noopener noreferrer" className="text-brand-400 hover:text-brand-300">
-                        View →
-                      </a>
-                    </div>
-                  )}
-
-                  {winner.payment_status === 'paid' && winner.paid_at && (
-                    <div className="mt-3 text-green-400 text-sm">
-                      💰 Paid on {new Date(winner.paid_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </div>
-                  )}
-                </motion.div>
-              );
-            })}
+                {w.proof_url && (
+                  <div className="mt-3 flex items-center gap-2">
+                    <span className="text-green-400 text-xs">✓ Proof submitted</span>
+                    <a href={w.proof_url} target="_blank" rel="noreferrer" className="text-brand-400 text-xs">View →</a>
+                  </div>
+                )}
+              </motion.div>
+            ))}
           </div>
         ) : (
-          <div className="glass-card text-center py-16">
-            <div className="text-5xl mb-4">🎰</div>
-            <h3 className="text-white font-semibold mb-2">No winnings yet</h3>
-            <p className="text-dark-400 text-sm max-w-sm mx-auto">
-              Enter monthly draws with your scores to win. Match 3, 4, or all 5 numbers!
-            </p>
+          <div className="text-center py-16 glass-card">
+            <motion.div
+              className="text-5xl mb-4"
+              animate={{ y: [0, -10, 0], rotate: [0, 5, -5, 0] }}
+              transition={{ duration: 4, repeat: Infinity }}
+            >🏆</motion.div>
+            <h3 className="text-white font-semibold mb-2">No Winnings Yet</h3>
+            <p className="text-dark-400 text-sm">Keep entering your scores — your lucky draw could be next month!</p>
           </div>
         )}
       </div>
