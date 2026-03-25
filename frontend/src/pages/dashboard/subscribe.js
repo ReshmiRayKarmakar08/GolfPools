@@ -111,6 +111,15 @@ export default function SubscribePage() {
   }, [router.query]);
 
   useEffect(() => {
+    if (!hostedPaymentId) return;
+    const subId = hostedSubscriptionId || (typeof window !== 'undefined' ? localStorage.getItem('hostedSubscriptionId') : '');
+    if (!subId) return;
+    if (confirmingHosted) return;
+    confirmHostedPayment();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hostedPaymentId, hostedSubscriptionId]);
+
+  useEffect(() => {
     let interval = null;
     let timeout = null;
     if (typeof window === 'undefined') return () => {};
@@ -601,10 +610,24 @@ export default function SubscribePage() {
                 <p className="text-dark-400 text-xs mb-3">
                   After you pay on the hosted page, we’ll auto‑activate your subscription within a minute.
                 </p>
+                <label className="block text-xs text-dark-400 mb-2">
+                  Razorpay Payment ID (if you were redirected without auto‑verification)
+                </label>
+                <input
+                  type="text"
+                  value={hostedPaymentId}
+                  onChange={(e) => setHostedPaymentId(e.target.value.trim())}
+                  className="input-field text-sm mb-3"
+                  placeholder="pay_XXXXXXXXXXXXXX"
+                />
                 <button
                   className="btn-secondary w-full mt-1 py-2.5"
                   onClick={async () => {
                     try {
+                      if (hostedPaymentId) {
+                        await confirmHostedPayment();
+                        return;
+                      }
                       const { data } = await subscriptionsAPI.getCurrent();
                       if (data?.subscription?.status === 'active') {
                         localStorage.removeItem('hostedSubscriptionId');
