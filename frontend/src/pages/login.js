@@ -8,10 +8,11 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import useAuthStore from '../context/authStore';
 import ParticleCanvas from '../components/effects/ParticleCanvas';
+import GoogleSignInButton from '../components/auth/GoogleSignInButton';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isAuthenticated, isLoading } = useAuthStore();
+  const { login, googleLogin, isAuthenticated, isLoading } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const { register, handleSubmit, setValue, formState: { errors } } = useForm();
 
@@ -64,6 +65,17 @@ export default function LoginPage() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleCredential = async (credential) => {
+    try {
+      await googleLogin(credential);
+      const user = useAuthStore.getState().user;
+      toast.success(`Welcome, ${user?.first_name || 'Player'}!`);
+      router.push('/dashboard');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Google sign-in failed');
     }
   };
 
@@ -141,6 +153,12 @@ export default function LoginPage() {
                 ) : 'Sign In'}
               </motion.button>
             </form>
+            <div className="my-4 flex items-center gap-3">
+              <div className="h-px flex-1 bg-white/10" />
+              <span className="text-xs text-dark-500">OR</span>
+              <div className="h-px flex-1 bg-white/10" />
+            </div>
+            <GoogleSignInButton onCredential={handleGoogleCredential} disabled={loading} />
           </div>
 
           <p className="text-center mt-6 text-dark-400 text-sm">

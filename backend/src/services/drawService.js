@@ -216,6 +216,25 @@ const executeDraw = async (drawId, adminId) => {
     }
   }
 
+  // Notify all participants that results are published
+  for (const entry of entries || []) {
+    const { data: participant } = await supabaseAdmin
+      .from('users')
+      .select('email, first_name')
+      .eq('id', entry.user_id)
+      .maybeSingle();
+
+    if (!participant?.email) continue;
+    const isWinner = allWinners.some(w => w.user_id === entry.user_id);
+    await emailService.sendDrawResultAnnouncement(
+      participant.email,
+      participant.first_name,
+      draw.draw_month,
+      draw.draw_year,
+      isWinner
+    ).catch(console.error);
+  }
+
   return {
     draw_id: drawId,
     winning_numbers: winningNumbers,

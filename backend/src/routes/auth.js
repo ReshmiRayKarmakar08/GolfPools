@@ -2,11 +2,13 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
 const { v4: uuidv4 } = require('uuid');
 const { body, validationResult } = require('express-validator');
 const { supabaseAdmin } = require('../config/supabase');
 const { authenticate } = require('../middleware/auth');
 const emailService = require('../services/emailService');
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || process.env.GMAIL_CLIENT_ID);
 
 // Generate tokens
 const generateTokens = (userId) => {
@@ -22,6 +24,8 @@ const generateTokens = (userId) => {
   );
   return { accessToken, refreshToken };
 };
+
+const generateOtpCode = () => String(Math.floor(100000 + Math.random() * 900000));
 
 // POST /api/auth/register
 router.post('/register', [
@@ -346,24 +350,69 @@ router.post('/forgot-password', [
       .single();
 
     if (user) {
-      const resetToken = uuidv4();
-      const resetExpires = new Date(Date.now() + 3600000); // 1 hour
+      const otpCode = generateOtpCode();
+      const resetExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
       await supabaseAdmin
         .from('users')
         .update({
-          password_reset_token: resetToken,
+          password_reset_token: otpCode,
           password_reset_expires: resetExpires.toISOString()
         })
         .eq('id', user.id);
 
-      await emailService.sendPasswordResetEmail(email, user.first_name, resetToken).catch(console.error);
+      await emailService.sendPasswordOtpEmail(email, user.first_name, otpCode).catch(console.error);
     }
 
     // Always return success to prevent email enumeration
-    res.json({ message: 'If an account exists, a reset link has been sent.' });
+    res.json({ message: 'If an account exists, an OTP has been sent.' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to process request' });
+  }
+});
+
+// POST /api/auth/verify-password-otp
+router.post('/verify-password-otp', [
+  body('email').isEmail().normalizeEmail(),
+  body('otp').isLength({ min: 6, max: 6 }),
+  body('password').isLength({ min: 8 })
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { email, otp, password } = req.body;
+
+    const { data: user } = await supabaseAdmin
+      .from('users')
+      .select('id, password_reset_token, password_reset_expires')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (!user || !user.password_reset_token || user.password_reset_token !== otp) {
+      return res.status(400).json({ error: 'Invalid OTP' });
+    }
+
+    if (!user.password_reset_expires || new Date(user.password_reset_expires) < new Date()) {
+      return res.status(400).json({ error: 'OTP expired' });
+    }
+
+    const password_hash = await bcrypt.hash(password, 12);
+
+    await supabaseAdmin
+      .from('users')
+      .update({
+        password_hash,
+        password_reset_token: null,
+        password_reset_expires: null
+      })
+      .eq('id', user.id);
+
+    res.json({ message: 'Password reset successful' });
+  } catch (err) {
+    res.status(500).json({ error: 'OTP verification failed' });
   }
 });
 
@@ -416,35 +465,62 @@ router.post('/logout', authenticate, (req, res) => {
 // POST /api/auth/google - Google OAuth (dummy for local dev)
 router.post('/google', async (req, res) => {
   try {
-    const { email, first_name, last_name, google_id } = req.body;
+    const { id_token } = req.body;
+    const audience = process.env.GOOGLE_CLIENT_ID || process.env.GMAIL_CLIENT_ID;
 
-    if (!email) {
-      return res.status(400).json({ error: 'Email is required' });
+    if (!id_token || !audience) {
+      return res.status(400).json({ error: 'Google authentication is not configured' });
     }
 
-    // Check if user exists
+    const ticket = await googleClient.verifyIdToken({
+      idToken: id_token,
+      audience
+    });
+    const payload = ticket.getPayload();
+
+    const email = String(payload?.email || '').toLowerCase();
+    const first_name = payload?.given_name || email.split('@')[0];
+    const last_name = payload?.family_name || '';
+
+    if (!email || payload?.email_verified !== true) {
+      return res.status(400).json({ error: 'Google email is not verified' });
+    }
+
+    if (process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL.toLowerCase()) {
+      return res.status(403).json({ error: 'Admin account must use admin login only' });
+    }
+
     let { data: user } = await supabaseAdmin
       .from('users')
       .select('id, email, first_name, last_name, role, is_active')
       .eq('email', email)
-      .single();
+      .maybeSingle();
 
     if (!user) {
-      // Create new user from Google data
       const { data: newUser, error } = await supabaseAdmin
         .from('users')
         .insert({
           email,
-          password_hash: await bcrypt.hash(`google_${Date.now()}`, 12),
-          first_name: first_name || email.split('@')[0],
-          last_name: last_name || '',
-          email_verified: true
+          password_hash: await bcrypt.hash(`google_${Date.now()}_${payload.sub}`, 12),
+          first_name,
+          last_name,
+          role: 'user',
+          email_verified: true,
+          is_active: true
         })
         .select('id, email, first_name, last_name, role')
         .single();
 
       if (error) throw error;
-      user = newUser;
+      user = { ...newUser, is_active: true };
+    }
+
+    if (!user.is_active) {
+      return res.status(403).json({ error: 'Account has been deactivated' });
+    }
+
+    if (user.role !== 'user') {
+      return res.status(403).json({ error: 'Google login is allowed for user accounts only' });
     }
 
     const { accessToken, refreshToken } = generateTokens(user.id);

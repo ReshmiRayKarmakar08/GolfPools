@@ -60,6 +60,21 @@ const sendPasswordResetEmail = async (email, firstName, resetToken) => {
   `);
 };
 
+const sendPasswordOtpEmail = async (email, firstName, otpCode) => {
+  await sendEmail(email, 'GolfPools Password OTP', `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 40px; text-align: center;">
+        <h1 style="color: #00d4ff; margin: 0;">Password Reset OTP</h1>
+      </div>
+      <div style="padding: 30px;">
+        <p>Hi ${firstName || 'there'}, use this OTP to reset your password:</p>
+        <div style="font-size: 32px; letter-spacing: 8px; font-weight: bold; margin: 20px 0; color: #1a1a2e;">${otpCode}</div>
+        <p style="color: #666; font-size: 14px;">This OTP expires in 10 minutes. Do not share it with anyone.</p>
+      </div>
+    </div>
+  `);
+};
+
 const sendWinnerNotification = async (email, firstName, category, amount, month, year) => {
   const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const payoutChoices = [
@@ -107,10 +122,61 @@ const sendSubscriptionConfirmation = async (email, firstName, planType, amount) 
   `);
 };
 
+const sendSubscriptionCancellation = async (email, firstName, endDate) => {
+  await sendEmail(email, 'Subscription Cancellation Scheduled', `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 40px; text-align: center;">
+        <h1 style="color: #FFD700; margin: 0;">Cancellation Confirmed</h1>
+      </div>
+      <div style="padding: 30px;">
+        <p>Hi ${firstName || 'there'}, your subscription cancellation request is confirmed.</p>
+        <p>Your benefits remain active until <strong>${endDate}</strong>.</p>
+        <a href="${process.env.FRONTEND_URL}/dashboard/subscription" style="display: inline-block; background: #00d4ff; color: #000; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Subscription</a>
+      </div>
+    </div>
+  `);
+};
+
+const sendCharityContributionReceipt = async (email, firstName, amount, charityName, planType) => {
+  await sendEmail(email, 'Your Charity Contribution Receipt', `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 40px; text-align: center;">
+        <h1 style="color: #00d4ff; margin: 0;">Contribution Confirmed</h1>
+      </div>
+      <div style="padding: 30px;">
+        <p>Hi ${firstName || 'there'}, thank you for supporting ${charityName || 'your selected charity'}.</p>
+        <p>Contribution amount: <strong>₹${Number(amount || 0).toFixed(2)}</strong></p>
+        <p>Plan: <strong>${planType || 'subscription'}</strong></p>
+        <a href="${process.env.FRONTEND_URL}/dashboard/charity" style="display: inline-block; background: #00d4ff; color: #000; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Charity Dashboard</a>
+      </div>
+    </div>
+  `);
+};
+
+const sendDrawResultAnnouncement = async (email, firstName, month, year, isWinner) => {
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  await sendEmail(email, `Draw Results Published - ${monthNames[month - 1]} ${year}`, `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 40px; text-align: center;">
+        <h1 style="color: #00d4ff; margin: 0;">Monthly Draw Results</h1>
+      </div>
+      <div style="padding: 30px;">
+        <p>Hi ${firstName || 'there'}, the ${monthNames[month - 1]} ${year} draw results are now live.</p>
+        <p>${isWinner ? 'Great news - you have a winning result in this draw.' : 'Check your dashboard to see your draw outcome and stats.'}</p>
+        <a href="${process.env.FRONTEND_URL}/dashboard/draws" style="display: inline-block; background: #00d4ff; color: #000; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Draw Results</a>
+      </div>
+    </div>
+  `);
+};
+
 module.exports = {
   sendWelcomeEmail,
   sendPasswordResetEmail,
+  sendPasswordOtpEmail,
   sendWinnerNotification,
   sendSubscriptionConfirmation,
+  sendSubscriptionCancellation,
+  sendCharityContributionReceipt,
+  sendDrawResultAnnouncement,
   sendEmail
 };

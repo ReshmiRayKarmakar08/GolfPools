@@ -118,6 +118,14 @@ const activateSubscriptionFromPayment = async ({ userId, subscription, payment }
     amount * 100
   ).catch(console.error);
 
+  await emailService.sendCharityContributionReceipt(
+    subscription.users?.email,
+    subscription.users?.first_name,
+    charityAmount,
+    subscription.charities?.name,
+    subscription.plan_type
+  ).catch(console.error);
+
   await supabaseAdmin.from('notifications').insert({
     user_id: userId,
     type: 'subscription_active',
@@ -346,6 +354,14 @@ router.post('/confirm-hosted', [
       amount * 100
     ).catch(console.error);
 
+    await emailService.sendCharityContributionReceipt(
+      req.user.email,
+      req.user.first_name,
+      charityAmount,
+      subscription.charities?.name,
+      subscription.plan_type
+    ).catch(console.error);
+
     await supabaseAdmin.from('notifications').insert({
       user_id: req.user.id,
       type: 'subscription_active',
@@ -572,6 +588,14 @@ router.post('/verify', [
       amount * 100
     ).catch(console.error);
 
+    await emailService.sendCharityContributionReceipt(
+      req.user.email,
+      req.user.first_name,
+      charityAmount,
+      subscription.charities?.name,
+      subscription.plan_type
+    ).catch(console.error);
+
     // Create notification
     await supabaseAdmin.from('notifications').insert({
       user_id: req.user.id,
@@ -630,13 +654,34 @@ router.post('/cancel-subscription', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'No active subscription found' });
     }
 
+    const cancelledAt = new Date().toISOString();
     await supabaseAdmin
       .from('subscriptions')
       .update({
         cancel_at_period_end: true,
-        cancelled_at: new Date().toISOString()
+        cancelled_at: cancelledAt
       })
       .eq('id', subscription.id);
+
+    const { data: user } = await supabaseAdmin
+      .from('users')
+      .select('email, first_name')
+      .eq('id', req.user.id)
+      .maybeSingle();
+
+    const { data: currentSub } = await supabaseAdmin
+      .from('subscriptions')
+      .select('current_period_end')
+      .eq('id', subscription.id)
+      .maybeSingle();
+
+    await emailService.sendSubscriptionCancellation(
+      user?.email || req.user.email,
+      user?.first_name || req.user.first_name,
+      currentSub?.current_period_end
+        ? new Date(currentSub.current_period_end).toLocaleDateString('en-IN')
+        : 'the end of your current billing cycle'
+    ).catch(console.error);
 
     res.json({ message: 'Subscription will be cancelled at the end of the current period' });
   } catch (err) {

@@ -31,6 +31,14 @@ const useAuthStore = create((set, get) => ({
     return data;
   },
 
+  googleLogin: async (idToken) => {
+    const { data } = await authAPI.google({ id_token: idToken });
+    localStorage.setItem('accessToken', data.accessToken);
+    localStorage.setItem('refreshToken', data.refreshToken);
+    set({ user: data.user, isAuthenticated: true });
+    return data;
+  },
+
   register: async (formData) => {
     const { data } = await authAPI.register(formData);
     localStorage.setItem('accessToken', data.accessToken);

@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import useAuthStore from '../context/authStore';
 import { charitiesAPI } from '../utils/api';
 import ParticleCanvas from '../components/effects/ParticleCanvas';
+import GoogleSignInButton from '../components/auth/GoogleSignInButton';
 
 const STEPS = ['Account', 'Profile', 'Charity & Plan'];
 
@@ -20,7 +21,7 @@ const stepVariants = {
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register: registerUser, isAuthenticated, isLoading } = useAuthStore();
+  const { register: registerUser, googleLogin, isAuthenticated, isLoading } = useAuthStore();
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [selectedCharity, setSelectedCharity] = useState(null);
@@ -114,6 +115,16 @@ export default function RegisterPage() {
     }
   };
 
+  const handleGoogleCredential = async (credential) => {
+    try {
+      await googleLogin(credential);
+      toast.success('Google account connected. Welcome!');
+      router.push('/dashboard');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Google sign-up failed');
+    }
+  };
+
   return (
     <>
       <Head>
@@ -159,6 +170,16 @@ export default function RegisterPage() {
 
           {/* Form */}
           <div className="glass-card p-5 sm:p-8 min-h-[320px]">
+            {step === 0 && (
+              <>
+                <GoogleSignInButton onCredential={handleGoogleCredential} disabled={loading} />
+                <div className="my-4 flex items-center gap-3">
+                  <div className="h-px flex-1 bg-white/10" />
+                  <span className="text-xs text-dark-500">OR CONTINUE WITH EMAIL</span>
+                  <div className="h-px flex-1 bg-white/10" />
+                </div>
+              </>
+            )}
             <form onSubmit={handleSubmit(onSubmit)}>
               <AnimatePresence mode="wait" custom={direction}>
                 {step === 0 && (
