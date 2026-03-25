@@ -1,6 +1,5 @@
 <div align="center">
-  <!-- 🛑 REPLACE THIS with your actual logo URL -->
-  <img src="https://via.placeholder.com/150x150/111827/00E5FF?text=Logo" alt="GolfPools Logo" width="120" />
+  <img src="./logo.svg" alt="GolfPools Logo" width="64" />
 
   # ⛳ GolfPools — Charity Subscription Platform
 
