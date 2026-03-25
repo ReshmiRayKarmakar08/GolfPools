@@ -83,6 +83,8 @@ export const subscriptionsAPI = {
 export const paymentsAPI = {
   createOrder: (data) => api.post('/payments/create-order', data),
   verifyPayment: (data) => api.post('/payments/verify', data),
+  createHosted: (data) => api.post('/payments/create-hosted', data),
+  confirmHosted: (data) => api.post('/payments/confirm-hosted', data),
   getHistory: () => api.get('/payments/history'),
   cancelSubscription: () => api.post('/payments/cancel-subscription'),
 };

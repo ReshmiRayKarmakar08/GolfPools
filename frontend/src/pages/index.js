@@ -89,7 +89,7 @@ function StatCard({ stat, index }) {
 
   return (
     <motion.div
-      className="glass-card p-6 text-center floating-card"
+      className="glass-card p-4 sm:p-6 text-center floating-card"
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
@@ -113,7 +113,7 @@ function PrizeOrb({ tier, icon, pct, desc, delay, glowColor }) {
       transition={{ delay, duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
       <div
-        className="glassmorphic-orb w-40 h-40 md:w-48 md:h-48 mb-4 animate-levitate"
+        className="glassmorphic-orb w-32 h-32 md:w-48 md:h-48 mb-4 animate-levitate"
         style={{
           '--orb-glow': glowColor,
           animationDelay: `${delay * 2}s`,
@@ -243,7 +243,7 @@ export default function Home() {
             {/* Hero heading — GSAP stagger */}
             <h1
               ref={heroRef}
-              className="font-display tracking-wider text-6xl md:text-8xl lg:text-9xl text-white leading-none mb-8"
+              className="font-display tracking-wider text-5xl md:text-8xl lg:text-9xl text-white leading-none mb-8"
               style={{ perspective: '800px' }}
             >
               <span className="hero-word inline-block">PLAY.</span>{' '}

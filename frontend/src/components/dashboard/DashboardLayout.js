@@ -9,6 +9,26 @@ import { IconBarChart, IconTarget, IconDice, IconTrophy, IconHeart, IconCreditCa
 import LegalFooter from '../legal/LegalFooter';
 import SystemStatusOrb from '../admin/SystemStatusOrb';
 
+// Quick SVG for Menu/Close
+function IconMenu({ size = 24, className = '' }) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+  );
+}
+
+function IconX({ size = 24, className = '' }) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
+
 const USER_NAV = [
   { href: '/dashboard', label: 'Overview', icon: <IconBarChart size={18} /> },
   { href: '/dashboard/scores', label: 'My Scores', icon: <IconTarget size={18} /> },
@@ -79,6 +99,20 @@ export default function DashboardLayout({ children, title, legalFooterMaxWidth =
       </Head>
 
       <div className="min-h-screen flex">
+        
+        {/* Mobile Dropdown Backdrop */}
+        <AnimatePresence>
+          {sidebarOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSidebarOpen(false)}
+              className="fixed inset-0 z-30 bg-black/60 lg:hidden backdrop-blur-sm"
+            />
+          )}
+        </AnimatePresence>
+
         {/* Sidebar */}
         <aside
           className={`fixed inset-y-0 left-0 z-40 w-64 lg:static lg:translate-x-0 transform transition-transform duration-300 ${
@@ -91,19 +125,24 @@ export default function DashboardLayout({ children, title, legalFooterMaxWidth =
           }}
         >
           <div className="flex flex-col h-full p-5">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 mb-8 group">
-              <motion.span
-                className="text-2xl"
-                animate={{ y: [0, -3, 0] }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-              >
-              <IconGolf className="text-brand-400" size={22} />
-              </motion.span>
-              <span className="font-display tracking-widest text-lg text-white group-hover:text-brand-400 transition-colors">
-                GOLFPOOLS
-              </span>
-            </Link>
+            {/* Logo and Close Button (Mobile) */}
+            <div className="flex items-center justify-between mb-8 group">
+              <Link href="/" className="flex items-center gap-2">
+                <motion.span
+                  className="text-2xl"
+                  animate={{ y: [0, -3, 0] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                <IconGolf className="text-brand-400" size={22} />
+                </motion.span>
+                <span className="font-display tracking-widest text-lg text-white group-hover:text-brand-400 transition-colors">
+                  GOLFPOOLS
+                </span>
+              </Link>
+              <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-dark-400 hover:text-white transition-colors">
+                <IconX size={24} />
+              </button>
+            </div>
 
             {/* Role badge */}
             {isAdmin && (

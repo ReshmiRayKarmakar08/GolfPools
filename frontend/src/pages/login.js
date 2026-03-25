@@ -94,7 +94,7 @@ export default function LoginPage() {
             <p className="text-dark-400 mt-2">Sign in to your GolfPools account</p>
           </div>
 
-          <div className="glass-card p-8">
+          <div className="glass-card p-5 sm:p-8">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <div>
                 <label className="block text-sm text-dark-300 mb-2">Email</label>

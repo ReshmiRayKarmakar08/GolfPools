@@ -90,6 +90,9 @@ export default function SubscribePage() {
   const [showPaymentSummary, setShowPaymentSummary] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
   const [upiId, setUpiId] = useState('');
+  const [hostedSubscriptionId, setHostedSubscriptionId] = useState('');
+  const [hostedPaymentId, setHostedPaymentId] = useState('');
+  const [confirmingHosted, setConfirmingHosted] = useState(false);
 
   const { data: existingSub } = useQuery('subscription', subscriptionsAPI.getCurrent, {
     select: (r) => r.data.subscription,
@@ -102,7 +105,18 @@ export default function SubscribePage() {
   useEffect(() => {
     if (router.query.charity) setSelectedCharity(router.query.charity);
     if (router.query.plan) setSelectedPlan(router.query.plan);
+    if (router.query.payment_id) {
+      setHostedPaymentId(String(router.query.payment_id));
+    }
   }, [router.query]);
+
+  useEffect(() => {
+    if (!router.query.payment_id) return;
+    const subId = typeof window !== 'undefined' ? localStorage.getItem('hostedSubscriptionId') : '';
+    if (!subId) return;
+    confirmHostedPayment();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.query.payment_id]);
 
   const plan = PLANS.find((p) => p.id === selectedPlan) || PLANS[0];
   const charityObj = charities?.find((c) => c.id === selectedCharity);
@@ -227,6 +241,60 @@ export default function SubscribePage() {
     } catch (err) {
       toast.error(err.response?.data?.error || 'Could not initiate payment');
       setPaying(false);
+    }
+  };
+
+  const handleHostedPayment = async () => {
+    if (!selectedCharity) {
+      toast.error('Please select a charity to support');
+      return;
+    }
+    try {
+      const { data } = await paymentsAPI.createHosted({
+        plan_type: selectedPlan,
+        charity_id: selectedCharity,
+        charity_percentage: charityPct,
+      });
+      setHostedSubscriptionId(data.subscription_id);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('hostedSubscriptionId', data.subscription_id);
+      }
+      if (hostedPaymentUrl) {
+        window.open(hostedPaymentUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        toast.error('Hosted payment page URL is not configured.');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to start hosted payment');
+    }
+  };
+
+  const confirmHostedPayment = async () => {
+    const subId = hostedSubscriptionId || (typeof window !== 'undefined' ? localStorage.getItem('hostedSubscriptionId') : '');
+    if (!subId) {
+      toast.error('Hosted subscription not found. Please start payment again.');
+      return;
+    }
+    if (!hostedPaymentId) {
+      toast.error('Please enter the Razorpay payment ID.');
+      return;
+    }
+    setConfirmingHosted(true);
+    try {
+      await paymentsAPI.confirmHosted({
+        subscription_id: subId,
+        payment_id: hostedPaymentId,
+      });
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('hostedSubscriptionId');
+      }
+      await refreshUser();
+      toast.success('Subscription activated!');
+      router.push('/dashboard');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to confirm hosted payment');
+    } finally {
+      setConfirmingHosted(false);
     }
   };
 
@@ -501,12 +569,32 @@ export default function SubscribePage() {
               {hostedPaymentUrl && (
                 <button
                   type="button"
-                  onClick={() => window.open(hostedPaymentUrl, '_blank', 'noopener,noreferrer')}
+                  onClick={handleHostedPayment}
                   className="btn-secondary w-full py-3 mt-3 text-sm"
                 >
                   Pay on Razorpay Hosted Page
                 </button>
               )}
+
+              <div className="mt-4 glass-card p-4">
+                <div className="text-white text-sm font-semibold mb-2">Hosted Payment Confirmation</div>
+                <p className="text-dark-400 text-xs mb-3">
+                  After paying on the hosted page, paste the Razorpay payment ID here to activate your subscription.
+                </p>
+                <input
+                  className="input-field text-sm"
+                  placeholder="Razorpay Payment ID (e.g. pay_XXXXXXXXXX)"
+                  value={hostedPaymentId}
+                  onChange={(e) => setHostedPaymentId(e.target.value)}
+                />
+                <button
+                  className="btn-secondary w-full mt-3 py-2.5"
+                  onClick={confirmHostedPayment}
+                  disabled={confirmingHosted}
+                >
+                  {confirmingHosted ? 'Confirming...' : 'Confirm Hosted Payment'}
+                </button>
+              </div>
 
               {!selectedCharity && (
                 <p className="text-amber-400 text-xs text-center mt-2">
@@ -644,7 +732,7 @@ export default function SubscribePage() {
               {hostedPaymentUrl && (
                 <button
                   type="button"
-                  onClick={() => window.open(hostedPaymentUrl, '_blank', 'noopener,noreferrer')}
+                  onClick={handleHostedPayment}
                   className="btn-secondary w-full mt-3 py-2.5"
                 >
                   Pay on Hosted Page

@@ -67,6 +67,166 @@ const calculateDistribution = (totalAmount, charityPct) => {
   };
 };
 
+const buildSubscriptionPeriod = (plan_type) => {
+  const periodStart = new Date();
+  const periodEnd = new Date();
+  if (plan_type === 'monthly') {
+    periodEnd.setMonth(periodEnd.getMonth() + 1);
+  } else {
+    periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+  }
+  return { periodStart, periodEnd };
+};
+
+// POST /api/payments/create-hosted - Create pending subscription for hosted payment page
+router.post('/create-hosted', [
+  authenticate,
+  body('plan_type').isIn(['monthly', 'yearly']),
+  body('charity_id').isUUID(),
+  body('charity_percentage').optional().isFloat({ min: 10, max: 50 })
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { plan_type, charity_id, charity_percentage = 10 } = req.body;
+
+    const { data: existingSub } = await supabaseAdmin
+      .from('subscriptions')
+      .select('id, status')
+      .eq('user_id', req.user.id)
+      .in('status', ['active', 'pending'])
+      .maybeSingle();
+
+    if (existingSub?.status === 'active') {
+      return res.status(409).json({ error: 'You already have an active subscription' });
+    }
+
+    if (existingSub?.status === 'pending') {
+      return res.json({ subscription_id: existingSub.id });
+    }
+
+    const plan = PLANS[plan_type];
+    const { periodStart, periodEnd } = buildSubscriptionPeriod(plan_type);
+
+    const { data: subscription, error } = await supabaseAdmin
+      .from('subscriptions')
+      .insert({
+        user_id: req.user.id,
+        plan_type,
+        status: 'pending',
+        charity_id,
+        charity_percentage,
+        amount: plan.price / 100,
+        current_period_start: periodStart.toISOString(),
+        current_period_end: periodEnd.toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.json({ subscription_id: subscription.id });
+  } catch (err) {
+    console.error('Create hosted subscription error:', err);
+    res.status(500).json({ error: 'Failed to create hosted subscription' });
+  }
+});
+
+// POST /api/payments/confirm-hosted - Confirm hosted payment using payment_id
+router.post('/confirm-hosted', [
+  authenticate,
+  body('subscription_id').isUUID(),
+  body('payment_id').notEmpty()
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { subscription_id, payment_id } = req.body;
+
+    const { data: subscription } = await supabaseAdmin
+      .from('subscriptions')
+      .select('*, charities(id, name)')
+      .eq('id', subscription_id)
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (!subscription) {
+      return res.status(404).json({ error: 'Subscription not found' });
+    }
+
+    let paymentMethod = 'hosted';
+    if (!IS_SANDBOX) {
+      const razorpay = getRazorpay();
+      const payment = await razorpay.payments.fetch(payment_id);
+      if (!payment || payment.status !== 'captured') {
+        return res.status(400).json({ error: 'Payment not captured yet' });
+      }
+      paymentMethod = payment.method || paymentMethod;
+    }
+
+    const amount = Number(subscription.amount || 0);
+    const { charityAmount, platformAmount, prizePoolAmount } = calculateDistribution(
+      amount,
+      Number(subscription.charity_percentage || DISTRIBUTION.baseCharityPct)
+    );
+
+    await supabaseAdmin.from('payments').insert({
+      user_id: req.user.id,
+      subscription_id: subscription.id,
+      razorpay_payment_id: payment_id,
+      razorpay_order_id: null,
+      razorpay_signature: null,
+      amount,
+      currency: 'INR',
+      status: 'captured',
+      payment_method: paymentMethod,
+      charity_id: subscription.charity_id,
+      charity_amount: charityAmount,
+      platform_amount: platformAmount,
+      prize_pool_amount: prizePoolAmount
+    });
+
+    await supabaseAdmin
+      .from('subscriptions')
+      .update({ status: 'active' })
+      .eq('id', subscription_id);
+
+    await emailService.sendSubscriptionConfirmation(
+      req.user.email,
+      req.user.first_name,
+      subscription.plan_type,
+      amount * 100
+    ).catch(console.error);
+
+    await supabaseAdmin.from('notifications').insert({
+      user_id: req.user.id,
+      type: 'subscription_active',
+      title: 'Subscription Activated! 🎉',
+      message: `Your ${subscription.plan_type} subscription is now active. You can enter draws and track your contributions.`,
+      metadata: { subscription_id, plan_type: subscription.plan_type }
+    });
+
+    res.json({
+      message: 'Hosted payment confirmed and subscription activated',
+      subscription: {
+        id: subscription.id,
+        plan_type: subscription.plan_type,
+        status: 'active',
+        current_period_end: subscription.current_period_end
+      }
+    });
+  } catch (err) {
+    console.error('Confirm hosted payment error:', err);
+    res.status(500).json({ error: 'Hosted payment confirmation failed' });
+  }
+});
+
 // POST /api/payments/create-order - Create Razorpay order
 router.post('/create-order', [
   authenticate,

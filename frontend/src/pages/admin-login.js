@@ -154,7 +154,7 @@ export default function AdminLoginPage() {
 
           {/* Main card */}
           <div
-            className="rounded-2xl p-8 relative overflow-hidden"
+            className="rounded-2xl p-5 sm:p-8 relative overflow-hidden"
             style={{
               background: 'rgba(13,18,36,0.85)',
               backdropFilter: 'blur(24px)',
@@ -255,7 +255,7 @@ export default function AdminLoginPage() {
                         </div>
                         {adminHintRevealed ? (
                           <>
-                            <div className="text-white text-sm">{adminEmail}</div>
+                            <div className="text-white text-sm break-all">{adminEmail}</div>
                             <div className="text-dark-400 text-xs mt-0.5">Password: ••••••••••</div>
                           </>
                         ) : (

@@ -3,8 +3,6 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/admin": "pages/admin.js",
-  "/admin/analytics": "pages/admin/analytics.js",
-  "/dashboard": "pages/dashboard.js",
   "/admin/users": "pages/admin/users.js",
-  "/admin/charities": "pages/admin/charities.js"
+  "/admin/subscriptions": "pages/admin/subscriptions.js"
 }

@@ -158,7 +158,7 @@ export default function RegisterPage() {
           </div>
 
           {/* Form */}
-          <div className="glass-card p-8 min-h-[320px]">
+          <div className="glass-card p-5 sm:p-8 min-h-[320px]">
             <form onSubmit={handleSubmit(onSubmit)}>
               <AnimatePresence mode="wait" custom={direction}>
                 {step === 0 && (
