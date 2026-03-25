@@ -1,11 +1,17 @@
 import { useRef, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useQuery } from 'react-query';
 import { motion } from 'framer-motion';
 import gsap from 'gsap';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
 import { adminAPI } from '../../utils/api';
+import { IconUsers, IconCreditCard, IconDollar, IconClock, IconDice, IconTrophy, IconHeart, IconShield } from '../../components/icons/Icons';
 import Link from 'next/link';
+
+const RevenueLineChart = dynamic(
+  () => import('../../components/admin/AdminCharts').then((m) => m.RevenueLineChart),
+  { ssr: false }
+);
 
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -84,10 +90,10 @@ export default function AdminDashboard() {
       <div className="space-y-6">
         {/* Stats with count-up */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <CountUpCard icon="☹" label="Total Users" value={stats.totalUsers || 0} link="/admin/users" delay={0} />
-          <CountUpCard icon="■" label="Active Subscriptions" value={stats.activeSubscriptions || 0} link="/admin/subscriptions" delay={0.1} />
-          <CountUpCard icon="$" label="Revenue (30d)" value={stats.totalRevenue || 0} prefix="₹" delay={0.2} />
-          <CountUpCard icon="⏳" label="Pending Payouts" value={stats.pendingWinners || 0} link="/admin/winners" sub="Winners awaiting approval" delay={0.3} />
+          <CountUpCard icon={<IconUsers className="text-brand-400" size={24} />} label="Total Users" value={stats.totalUsers || 0} link="/admin/users" delay={0} />
+          <CountUpCard icon={<IconCreditCard className="text-green-400" size={24} />} label="Active Subscriptions" value={stats.activeSubscriptions || 0} link="/admin/subscriptions" delay={0.1} />
+          <CountUpCard icon={<IconDollar className="text-yellow-400" size={24} />} label="Revenue (30d)" value={stats.totalRevenue || 0} prefix="₹" delay={0.2} />
+          <CountUpCard icon={<IconClock className="text-orange-400" size={24} />} label="Pending Payouts" value={stats.pendingWinners || 0} link="/admin/winners" sub="Winners awaiting approval" delay={0.3} />
         </div>
 
         {/* Charts */}
@@ -100,16 +106,11 @@ export default function AdminDashboard() {
               transition={{ delay: 0.4 }}
             >
               <h3 className="text-white font-semibold mb-5">Revenue (Last 30 Days)</h3>
-              <ResponsiveContainer width="100%" height={220}>
-                <LineChart data={analyticsData.revenue_chart || []}>
-                  <XAxis dataKey="date" tick={{ fill: '#5a6190', fontSize: 11 }} tickFormatter={v => v.slice(5)} />
-                  <YAxis tick={{ fill: '#5a6190', fontSize: 11 }} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Line type="monotone" dataKey="revenue" stroke="#00c6ff" strokeWidth={2} dot={false} name="Revenue" />
-                  <Line type="monotone" dataKey="charity" stroke="#00E5CC" strokeWidth={2} dot={false} name="Charity" />
-                  <Line type="monotone" dataKey="prizePool" stroke="#FFD700" strokeWidth={2} dot={false} name="Prize Pool" />
-                </LineChart>
-              </ResponsiveContainer>
+              <RevenueLineChart
+                data={analyticsData.revenue_chart || []}
+                height={220}
+                tooltipContent={<ChartTooltip />}
+              />
             </motion.div>
 
             <motion.div
@@ -175,10 +176,10 @@ export default function AdminDashboard() {
           <h3 className="text-white font-semibold mb-5">Quick Actions</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { href: '/admin/draws', label: 'Manage Draws', icon: '☆' },
-              { href: '/admin/winners', label: 'Verify Winners', icon: '★' },
-              { href: '/admin/charities', label: 'Manage Charities', icon: '♥' },
-              { href: '/admin/users', label: 'User Management', icon: '☹' },
+              { href: '/admin/draws', label: 'Manage Draws', icon: <IconDice className="text-brand-400" size={20} /> },
+              { href: '/admin/winners', label: 'Verify Winners', icon: <IconTrophy className="text-yellow-400" size={20} /> },
+              { href: '/admin/charities', label: 'Manage Charities', icon: <IconHeart className="text-green-400" size={20} /> },
+              { href: '/admin/users', label: 'User Management', icon: <IconUsers className="text-purple-400" size={20} /> },
             ].map((action, i) => (
               <Link key={action.href} href={action.href}>
                 <motion.div

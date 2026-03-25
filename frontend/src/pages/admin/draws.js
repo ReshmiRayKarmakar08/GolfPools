@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
 import { drawsAPI } from '../../utils/api';
+import { IconCrown, IconMedal } from '../../components/icons/Icons';
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -229,9 +230,9 @@ export default function AdminDrawsPage() {
                     <td className="px-6 py-4">
                       {draw.status === 'completed' ? (
                         <div className="text-xs space-y-0.5">
-                          <div className="text-yellow-400">★ {draw.five_match_winner_count}</div>
-                          <div className="text-gray-400">✦ {draw.four_match_winner_count}</div>
-                          <div className="text-amber-600">● {draw.three_match_winner_count}</div>
+                          <div className="text-yellow-400 flex items-center gap-1"><IconCrown className="text-yellow-400" size={12} /> {draw.five_match_winner_count}</div>
+                          <div className="text-gray-400 flex items-center gap-1"><IconMedal className="text-gray-400" size={12} tier="silver" /> {draw.four_match_winner_count}</div>
+                          <div className="text-amber-600 flex items-center gap-1"><IconMedal className="text-amber-600" size={12} tier="bronze" /> {draw.three_match_winner_count}</div>
                         </div>
                       ) : <span className="text-dark-600 text-sm">—</span>}
                     </td>

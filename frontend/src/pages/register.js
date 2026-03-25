@@ -48,6 +48,13 @@ export default function RegisterPage() {
   }, [router.query.email, setValue]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      const plan = router.query.plan ? String(router.query.plan) : 'monthly';
+      router.replace(`/dashboard/subscribe?plan=${encodeURIComponent(plan)}`);
+      return;
+    }
     if (isLoading) return;
     if (!isAuthenticated) return;
 
@@ -91,9 +98,12 @@ export default function RegisterPage() {
       router.push(`/dashboard/subscribe?plan=${selectedPlan}&charity=${selectedCharity || ''}`);
     } catch (err) {
       const msg =
+        err.response?.data?.details || 
         err.response?.data?.error ||
         err.response?.data?.errors?.[0]?.msg ||
         'Registration failed';
+      
+      console.error('Registration Error Details:', err.response?.data);
       toast.error(msg);
 
       if (msg.toLowerCase().includes('already registered')) {

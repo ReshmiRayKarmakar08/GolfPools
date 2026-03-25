@@ -93,20 +93,35 @@ router.post('/register', [
     }
 
     if (error) {
-      console.error('Register insert error:', error);
+      console.error('CRITICAL: Registration insert failed:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        payload: { ...insertPayload, password_hash: '[REDACTED]' }
+      });
       if (error.code === '23505') {
         return res.status(409).json({ error: 'Email already registered' });
       }
-      return res.status(500).json({ error: 'Registration failed. Please try again.' });
+      return res.status(500).json({ 
+        error: 'Registration failed. Please try again.',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined 
+      });
     }
+
+    console.log('User created successfully:', user.id);
 
     // If charity selected, store preference in profile
     if (charity_id) {
-      await supabaseAdmin
+      console.log('Attempting to store charity preference:', charity_id);
+      const { error: updateError } = await supabaseAdmin
         .from('users')
         .update({ default_charity_id: charity_id })
-        .eq('id', user.id)
-        .catch(() => {}); // Ignore if column doesn't exist yet
+        .eq('id', user.id);
+      
+      if (updateError) {
+        console.warn('Non-fatal: Failed to set default_charity_id (column might be missing):', updateError.message);
+      }
     }
 
     // Send welcome email

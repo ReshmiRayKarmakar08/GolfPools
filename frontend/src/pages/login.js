@@ -11,7 +11,7 @@ import ParticleCanvas from '../components/effects/ParticleCanvas';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuthStore();
+  const { login, isAuthenticated, isLoading } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const { register, handleSubmit, setValue, formState: { errors } } = useForm();
 
@@ -20,6 +20,24 @@ export default function LoginPage() {
       setValue('email', String(router.query.email));
     }
   }, [router.query.email, setValue]);
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (isAuthenticated) {
+      router.replace('/dashboard');
+    }
+  }, [isAuthenticated, isLoading, router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-brand-500 mx-auto mb-4" />
+          <p className="text-dark-400">Verifying session...</p>
+        </div>
+      </div>
+    );
+  }
 
   const onSubmit = async (data) => {
     setLoading(true);

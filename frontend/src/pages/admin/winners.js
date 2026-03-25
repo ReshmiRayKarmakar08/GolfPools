@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
 import { winnersAPI } from '../../utils/api';
+import { IconCrown, IconMedal, IconShield, IconCheck, IconX } from '../../components/icons/Icons';
 
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -61,7 +62,7 @@ function ActionModal({ winner, type, onClose, onSubmit, loading }) {
                 animate={{ y: [0, -3, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                {winner.prize_category === '5-match' ? '★' : winner.prize_category === '4-match' ? '✦' : '●'}
+                {winner.prize_category === '5-match' ? <IconCrown className="text-yellow-400" size={16} /> : winner.prize_category === '4-match' ? <IconMedal className="text-gray-400" size={16} tier="silver" /> : <IconMedal className="text-amber-600" size={16} tier="bronze" />}
               </motion.span>
               <div>
                 <div className="text-white font-medium">{winner.users?.first_name} {winner.users?.last_name}</div>
@@ -178,6 +179,21 @@ export default function AdminWinnersPage() {
           <p className="text-dark-400 text-sm mt-1">Verify proof, approve claims, and track payments</p>
         </div>
 
+        {/* Razorpay Compliance Banner */}
+        <div className="admin-verification-banner flex items-start gap-4">
+          <div className="w-10 h-10 rounded-xl bg-yellow-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <IconShield className="text-yellow-400" size={20} />
+          </div>
+          <div>
+            <h3 className="text-white font-semibold text-sm mb-1">Verification Required — Payment Gateway Compliance</h3>
+            <p className="text-dark-400 text-xs leading-relaxed">
+              All prize claims must be manually verified before payment. Review uploaded scorecard proof and 
+              transition payment status from <span className="text-yellow-400">Pending</span> → <span className="text-green-400">Approved</span> → <span className="text-brand-400">Paid</span>. 
+              This process ensures compliance with Razorpay audit requirements.
+            </p>
+          </div>
+        </div>
+
         {/* Status filter tabs */}
         <div className="flex flex-wrap gap-2">
           {STATUS_TABS.map(tab => (
@@ -233,7 +249,7 @@ export default function AdminWinnersPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-white text-sm">
-                        {winner.prize_category === '5-match' ? '★' : winner.prize_category === '4-match' ? '✦' : '●'}
+                        {winner.prize_category === '5-match' ? <IconCrown className="text-yellow-400" size={16} /> : winner.prize_category === '4-match' ? <IconMedal className="text-gray-400" size={16} tier="silver" /> : <IconMedal className="text-amber-600" size={16} tier="bronze" />}
                         {' '}{winner.prize_category}
                       </span>
                     </td>
@@ -287,10 +303,10 @@ export default function AdminWinnersPage() {
                           </button>
                         )}
                         {winner.payment_status === 'paid' && (
-                          <span className="text-green-400 text-xs">✓ Paid</span>
+                          <span className="text-green-400 text-xs flex items-center gap-1"><IconCheck size={12} /> Paid</span>
                         )}
                         {winner.payment_status === 'rejected' && (
-                          <span className="text-red-400 text-xs">✗ Rejected</span>
+                          <span className="text-red-400 text-xs flex items-center gap-1"><IconX size={12} /> Rejected</span>
                         )}
                       </div>
                     </td>

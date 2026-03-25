@@ -60,8 +60,9 @@ app.use('/api/charities', require('./routes/charities'));
 app.use('/api/winners', require('./routes/winners'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/health', require('./routes/health'));
 
-// Health check
+// Basic health check (legacy)
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',

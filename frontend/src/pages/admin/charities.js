@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
 import { charitiesAPI } from '../../utils/api';
+import { IconHeart, IconStar } from '../../components/icons/Icons';
 
 export default function AdminCharitiesPage() {
   const qc = useQueryClient();
@@ -137,14 +138,14 @@ export default function AdminCharitiesPage() {
             <motion.div key={c.id} className="glass-card-hover p-5" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center text-xl">♥</div>
+                  <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center"><IconHeart className="text-green-400" size={20} /></div>
                   <div>
                     <div className="text-white font-semibold text-sm">{c.name}</div>
                     <div className="text-dark-500 text-xs">{c.category}</div>
                   </div>
                 </div>
                 <div className="flex flex-col gap-1 items-end">
-                  {c.is_featured && <span className="badge-warning">⭐ Featured</span>}
+                  {c.is_featured && <span className="badge-warning flex items-center gap-1"><IconStar className="text-yellow-400" size={12} /> Featured</span>}
                   <span className={c.is_active ? 'badge-success' : 'badge-error'}>
                     {c.is_active ? 'Active' : 'Inactive'}
                   </span>

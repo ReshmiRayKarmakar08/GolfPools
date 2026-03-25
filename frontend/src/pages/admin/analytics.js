@@ -1,11 +1,19 @@
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useQuery } from 'react-query';
-import {
-  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
-} from 'recharts';
+import { motion } from 'framer-motion';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
 import { adminAPI } from '../../utils/api';
+
+const RevenueLineChart = dynamic(
+  () => import('../../components/admin/AdminCharts').then((m) => m.RevenueLineChart),
+  { ssr: false }
+);
+
+const RevenuePieChart = dynamic(
+  () => import('../../components/admin/AdminCharts').then((m) => m.RevenuePieChart),
+  { ssr: false }
+);
 
 const COLORS = ['#00c6ff', '#FFD700', '#7983a8'];
 
@@ -73,29 +81,31 @@ export default function AdminAnalyticsPage() {
             { label: 'To Charities', value: data?.totals?.charity, color: '#00E5CC' },
             { label: 'Prize Pool', value: data?.totals?.prize_pool, color: '#FFD700' },
           ].map((stat, i) => (
-            <div key={i} className="glass-card p-5 text-center">
+            <motion.div
+              key={i}
+              className="glass-card p-5 text-center"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              whileHover={{ y: -4, transition: { duration: 0.2 } }}
+            >
               <div className="text-3xl font-bold font-mono mb-1" style={{ color: stat.color }}>
                 ₹{((stat.value || 0)).toLocaleString('en-IN')}
               </div>
               <div className="text-dark-400 text-sm">{stat.label}</div>
-            </div>
+            </motion.div>
           ))}
         </div>
 
         {/* Revenue line chart */}
         <div className="glass-card p-6">
           <h3 className="text-white font-semibold mb-5">Revenue Over Time</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={data?.revenue_chart || []}>
-              <XAxis dataKey="date" tick={{ fill: '#5a6190', fontSize: 11 }} tickFormatter={(v) => v.slice(5)} />
-              <YAxis tick={{ fill: '#5a6190', fontSize: 11 }} tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`} />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend wrapperStyle={{ color: '#7983a8', fontSize: 12 }} />
-              <Line type="monotone" dataKey="revenue" stroke="#00c6ff" strokeWidth={2} dot={false} name="Total Revenue" />
-              <Line type="monotone" dataKey="charity" stroke="#00E5CC" strokeWidth={2} dot={false} name="Charity" />
-              <Line type="monotone" dataKey="prizePool" stroke="#FFD700" strokeWidth={2} dot={false} name="Prize Pool" />
-            </LineChart>
-          </ResponsiveContainer>
+          <RevenueLineChart
+            data={data?.revenue_chart || []}
+            height={250}
+            tooltipContent={<CustomTooltip />}
+            showLegend
+          />
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6">
@@ -135,19 +145,7 @@ export default function AdminAnalyticsPage() {
           <div className="glass-card p-6">
             <h3 className="text-white font-semibold mb-5">Revenue Distribution</h3>
             <div className="flex items-center gap-4">
-              <ResponsiveContainer width="60%" height={160}>
-                <PieChart>
-                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={70} dataKey="value" paddingAngle={3}>
-                    {pieData.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(v) => [`₹${v.toLocaleString('en-IN')}`, '']}
-                    contentStyle={{ background: '#0d1224', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#e8e9f0' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              <RevenuePieChart data={pieData} colors={COLORS} height={160} />
               <div className="space-y-3">
                 {pieData.map((item, i) => (
                   <div key={i} className="flex items-center gap-2">

@@ -25,6 +25,13 @@ export default function AntiGravityLayout({ children }) {
   const isPublicRoute = ['/', '/login', '/register'].includes(router.pathname);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
+    if (router.pathname === '/login' || router.pathname === '/register') {
+      router.replace('/dashboard');
+    }
+  }, [isAuthenticated, router]);
+
+  useEffect(() => {
     if (!navRef.current || !isPublicRoute) return;
 
     // Floating navbar bobbing effect

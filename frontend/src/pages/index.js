@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Head from 'next/head';
 import { motion } from 'framer-motion';
@@ -128,7 +129,8 @@ function PrizeOrb({ tier, icon, pct, desc, delay, glowColor }) {
 }
 
 export default function Home() {
-  const { isAuthenticated } = useAuthStore();
+  const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuthStore();
   const heroRef = useRef(null);
   const planRefs = useRef([]);
 
@@ -136,6 +138,24 @@ export default function Home() {
     select: (r) => r.data.charities?.slice(0, 6),
     retry: false,
   });
+
+  const navigateToPlan = (planId) => {
+    const safePlan = planId || 'monthly';
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        router.push(`/dashboard/subscribe?plan=${encodeURIComponent(safePlan)}`);
+        return;
+      }
+    }
+    if (isAuthenticated) {
+      router.push(`/dashboard/subscribe?plan=${encodeURIComponent(safePlan)}`);
+      return;
+    }
+    router.push(`/register?plan=${encodeURIComponent(safePlan)}`);
+  };
+
+  const showLoading = isLoading;
 
   // GSAP hero text stagger
   useEffect(() => {
@@ -186,6 +206,14 @@ export default function Home() {
         <meta name="description" content="Subscribe, enter your scores, win monthly prizes, and donate to charity. The most exciting golf subscription platform." />
       </Head>
 
+      {showLoading ? (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-brand-500 mx-auto mb-4" />
+            <p className="text-dark-400">Verifying session...</p>
+          </div>
+        </div>
+      ) : (
       <div className="relative z-10">
         {/* ═══════════════════════════════════════════
             HERO SECTION
@@ -243,9 +271,14 @@ export default function Home() {
               transition={{ delay: 1.3, duration: 0.6 }}
             >
               <MagneticButton strength={0.3}>
-                <Link href={isAuthenticated ? '/dashboard/subscribe?plan=monthly' : '/register?plan=monthly'} className="btn-primary text-base px-10 py-4 relative z-10">
+                <button 
+                  onClick={() => {
+                    navigateToPlan('monthly');
+                  }}
+                  className="btn-primary text-base px-10 py-4 relative z-10"
+                >
                   Start Playing for ₹999/mo →
-                </Link>
+                </button>
               </MagneticButton>
                 <Link href="#how-it-works" className="btn-secondary text-base px-8 py-4">
                   See How It Works
@@ -499,12 +532,14 @@ export default function Home() {
                     ))}
                   </ul>
                   <MagneticButton strength={0.2} className="w-full">
-                    <Link
-                      href={isAuthenticated ? `/dashboard/subscribe?plan=${plan.id}` : `/register?plan=${plan.id}`}
-                      className={`block text-center py-3 rounded-xl font-semibold transition-all duration-300 relative z-10 ${plan.highlight ? 'btn-primary' : 'btn-secondary'}`}
+                    <button
+                      onClick={() => {
+                        navigateToPlan(plan.id);
+                      }}
+                      className={`w-full block text-center py-3 rounded-xl font-semibold transition-all duration-300 relative z-10 ${plan.highlight ? 'btn-primary' : 'btn-secondary'}`}
                     >
                       {plan.cta}
-                    </Link>
+                    </button>
                   </MagneticButton>
                 </div>
               ))}
@@ -532,9 +567,14 @@ export default function Home() {
                 <h2 className="section-heading text-4xl md:text-5xl mb-4">Ready to play?</h2>
                 <p className="text-dark-300 mb-8">Join thousands of golfers making a difference. Your subscription, your scores, your chance to win.</p>
                 <MagneticButton strength={0.35}>
-                  <Link href={isAuthenticated ? '/dashboard/subscribe?plan=monthly' : '/register?plan=monthly'} className="btn-gold text-base px-10 py-4 inline-block relative z-10">
+                  <button 
+                    onClick={() => {
+                      navigateToPlan('monthly');
+                    }}
+                    className="btn-gold text-base px-10 py-4 inline-block relative z-10"
+                  >
                     Join Now — From ₹999/month
-                  </Link>
+                  </button>
                 </MagneticButton>
               </div>
             </motion.div>
@@ -542,6 +582,7 @@ export default function Home() {
         </section>
 
       </div>
+      )}
     </>
   );
 }
