@@ -102,25 +102,31 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => updateMutation.mutate({ id: user.id, data: { is_active: !user.is_active } })}
-                            className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${user.is_active
-                              ? 'border-red-500/30 text-red-400 hover:bg-red-500/10'
-                              : 'border-green-500/30 text-green-400 hover:bg-green-500/10'
-                            }`}
-                          >
-                            {user.is_active ? 'Deactivate' : 'Activate'}
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm(`Delete ${user.first_name || 'this user'} permanently?`)) {
-                                updateMutation.mutate({ id: user.id, data: { is_active: false } });
-                              }
-                            }}
-                            className="text-xs border border-red-500/30 text-red-400 px-3 py-1.5 rounded-lg hover:bg-red-500/10 transition-colors"
-                          >
-                            Delete User
-                          </button>
+                          {user.role !== 'admin' ? (
+                            <>
+                              <button
+                                onClick={() => updateMutation.mutate({ id: user.id, data: { is_active: !user.is_active } })}
+                                className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${user.is_active
+                                  ? 'border-red-500/30 text-red-400 hover:bg-red-500/10'
+                                  : 'border-green-500/30 text-green-400 hover:bg-green-500/10'
+                                }`}
+                              >
+                                {user.is_active ? 'Deactivate' : 'Activate'}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Delete ${user.first_name || 'this user'} permanently?`)) {
+                                    updateMutation.mutate({ id: user.id, data: { is_active: false } });
+                                  }
+                                }}
+                                className="text-xs border border-red-500/30 text-red-400 px-3 py-1.5 rounded-lg hover:bg-red-500/10 transition-colors"
+                              >
+                                Delete User
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-dark-500 text-xs">Protected admin</span>
+                          )}
                         </div>
                       </td>
                     </tr>

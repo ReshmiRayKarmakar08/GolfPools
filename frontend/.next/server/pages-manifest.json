@@ -2,9 +2,9 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/admin-login": "pages/admin-login.js",
-  "/admin/draws": "pages/admin/draws.js",
   "/admin": "pages/admin.js",
   "/admin/analytics": "pages/admin/analytics.js",
+  "/dashboard": "pages/dashboard.js",
+  "/admin/users": "pages/admin/users.js",
   "/admin/charities": "pages/admin/charities.js"
 }

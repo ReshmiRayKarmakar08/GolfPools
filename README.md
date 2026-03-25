@@ -1,6 +1,30 @@
-# ⛳ Golf Charity Subscription Platform
+<div align="center">
+  <!-- 🛑 REPLACE THIS with your actual logo URL -->
+  <img src="https://via.placeholder.com/150x150/111827/00E5FF?text=Logo" alt="GolfPools Logo" width="120" />
 
-A full-stack subscription platform where golfers enter their Stableford scores, participate in monthly prize draws, and donate to their chosen charity.
+  # ⛳ GolfPools — Charity Subscription Platform
+
+  *A high-end, glassmorphic full-stack platform where golfers enter their Stableford scores, participate in monthly prize draws, and donate directly to their chosen charity.*
+
+  <br />
+
+  ### 📸 Platform Previews
+  <!-- 🛑 REPLACE the src="" inside the img tags below with your actual screenshot URLs -->
+  <table>
+    <tr>
+      <td align="center"><b>Admin Dashboard</b></td>
+      <td align="center"><b>Player Registration</b></td>
+      <td align="center"><b>Live Draw Mechanics</b></td>
+    </tr>
+    <tr>
+      <td><img src="https://via.placeholder.com/400x250/1f2937/ffffff?text=Add+Admin+Screenshot+Here" alt="Admin View" width="100%"/></td>
+      <td><img src="https://via.placeholder.com/400x250/1f2937/ffffff?text=Add+Register+Screenshot+Here" alt="Registration View" width="100%"/></td>
+      <td><img src="https://via.placeholder.com/400x250/1f2937/ffffff?text=Add+Draws+Screenshot+Here" alt="Draws View" width="100%"/></td>
+    </tr>
+  </table>
+
+  <br />
+</div>
 
 ---
 
