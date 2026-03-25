@@ -9,7 +9,7 @@
   <br />
 
   ### 📸 Platform Previews
-  <!-- 🛑 REPLACE the src="" inside the img tags below with your actual screenshot URLs -->
+  <!-- 🛑 Replace the links below with your uploaded images via GitHub Editor -->
   <table>
     <tr>
       <td align="center"><b>Admin Dashboard</b></td>
@@ -17,9 +17,9 @@
       <td align="center"><b>Live Draw Mechanics</b></td>
     </tr>
     <tr>
-      <td><img src="https://via.placeholder.com/400x250/1f2937/ffffff?text=Add+Admin+Screenshot+Here" alt="Admin View" width="100%"/></td>
-      <td><img src="https://via.placeholder.com/400x250/1f2937/ffffff?text=Add+Register+Screenshot+Here" alt="Registration View" width="100%"/></td>
-      <td><img src="https://via.placeholder.com/400x250/1f2937/ffffff?text=Add+Draws+Screenshot+Here" alt="Draws View" width="100%"/></td>
+      <td align="center"><br/><i>[Drag & Drop Admin Image Here]</i><br/><br/></td>
+      <td align="center"><br/><i>[Drag & Drop Register Image Here]</i><br/><br/></td>
+      <td align="center"><br/><i>[Drag & Drop Draws Image Here]</i><br/><br/></td>
     </tr>
   </table>
 
