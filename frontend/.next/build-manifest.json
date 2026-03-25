@@ -27,25 +27,25 @@
       "static/chunks/main.js",
       "static/chunks/pages/admin.js"
     ],
-    "/admin/users": [
+    "/admin-login": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/admin/users.js"
+      "static/chunks/pages/admin-login.js"
     ],
-    "/dashboard": [
+    "/admin/analytics": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/dashboard.js"
+      "static/chunks/pages/admin/analytics.js"
     ],
-    "/dashboard/charity": [
+    "/admin/charities": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/dashboard/charity.js"
+      "static/chunks/pages/admin/charities.js"
     ],
-    "/dashboard/subscription": [
+    "/admin/draws": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
-      "static/chunks/pages/dashboard/subscription.js"
+      "static/chunks/pages/admin/draws.js"
     ]
   },
   "ampFirstPages": []

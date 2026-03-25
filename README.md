@@ -189,6 +189,11 @@ Draw executed → Winner notified → Winner uploads proof
 
 ## 🌐 Deployment
 
+### Production + Local Together
+Local stays on `http://localhost:3000` and `http://localhost:5000` by default.
+For production, Vercel uses `NEXT_PUBLIC_API_URL` and Render uses `FRONTEND_URL`.
+This lets you run localhost and live URLs in parallel without changing code.
+
 ### Frontend → Vercel
 ```bash
 cd frontend
@@ -198,7 +203,7 @@ npx vercel --prod
 
 ### Backend → Render
 1. Connect GitHub repo to Render
-2. Use `backend/render.yaml` config
+2. Use `render.yaml` at repo root
 3. Set all env vars in Render dashboard
 
 ---
