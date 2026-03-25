@@ -34,11 +34,11 @@ export default function GrievanceRedressalPage() {
             <div className="grid md:grid-cols-2 gap-4 mb-5">
               <div className="rounded-xl p-4" style={{ border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)' }}>
                 <p className="text-xs text-dark-500 uppercase tracking-wider mb-1">Grievance Officer</p>
-                <p className="text-white">Niloy Mallik</p>
+                <p className="text-white">Reshmi Ray Karmakar</p>
               </div>
               <div className="rounded-xl p-4" style={{ border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)' }}>
                 <p className="text-xs text-dark-500 uppercase tracking-wider mb-1">Email</p>
-                <p className="text-white">[grievance@yourdomain.com]</p>
+                <p className="text-white">reshmiraykarmakar08@gmail.com</p>
               </div>
             </div>
 

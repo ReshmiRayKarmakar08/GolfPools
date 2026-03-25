@@ -96,16 +96,16 @@ export default function AntiGravityLayout({ children }) {
         </Link>
 
         <div className="hidden md:flex items-center gap-8">
-          <Link href="#how-it-works" className="nav-link hover:translate-y-[-1px] transition-all">
+          <Link href="/#how-it-works" className="nav-link hover:translate-y-[-1px] transition-all">
             How it Works
           </Link>
-          <Link href="#prizes" className="nav-link hover:translate-y-[-1px] transition-all">
+          <Link href="/#prizes" className="nav-link hover:translate-y-[-1px] transition-all">
             Prizes
           </Link>
-          <Link href="#charities" className="nav-link hover:translate-y-[-1px] transition-all">
+          <Link href="/#charities" className="nav-link hover:translate-y-[-1px] transition-all">
             Charities
           </Link>
-          <Link href="#plans" className="nav-link hover:translate-y-[-1px] transition-all">
+          <Link href="/#plans" className="nav-link hover:translate-y-[-1px] transition-all">
             Plans
           </Link>
         </div>
@@ -115,6 +115,9 @@ export default function AntiGravityLayout({ children }) {
             <Link href="/dashboard" className="btn-primary text-sm">Dashboard</Link>
           ) : (
             <>
+              <Link href="/admin-login" className="btn-secondary text-sm hidden md:block">
+                Admin Access
+              </Link>
               <Link href="/login" className="btn-secondary text-sm hidden md:block">Sign In</Link>
               <MagneticButton strength={0.25}>
                 <Link href="/register" className="btn-primary text-sm relative z-10">

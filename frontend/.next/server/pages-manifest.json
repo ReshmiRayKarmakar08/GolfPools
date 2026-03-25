@@ -2,8 +2,9 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
+  "/admin/users": "pages/admin/users.js",
   "/dashboard": "pages/dashboard.js",
-  "/dashboard/subscribe": "pages/dashboard/subscribe.js",
-  "/": "pages/index.js",
-  "/register": "pages/register.js"
+  "/dashboard/subscription": "pages/dashboard/subscription.js",
+  "/dashboard/charity": "pages/dashboard/charity.js",
+  "/admin": "pages/admin.js"
 }

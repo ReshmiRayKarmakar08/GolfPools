@@ -39,8 +39,12 @@ const authenticate = async (req, res, next) => {
 };
 
 const requireAdmin = (req, res, next) => {
+  const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase();
   if (req.user?.role !== 'admin') {
     return res.status(403).json({ error: 'Admin access required' });
+  }
+  if (adminEmail && req.user?.email?.toLowerCase() !== adminEmail) {
+    return res.status(403).json({ error: 'Admin access restricted to the primary admin account' });
   }
   next();
 };

@@ -172,7 +172,6 @@ export default function AdminWinnersPage() {
           loading={isLoading}
         />
       )}
-
       <div className="space-y-6">
         <div>
           <h2 className="text-white font-bold text-xl">Winners & Payouts</h2>

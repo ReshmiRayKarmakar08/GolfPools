@@ -159,14 +159,49 @@ router.post('/login', [
     }
 
     const { email, password } = req.body;
+    const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase();
+    const adminPassword = process.env.ADMIN_PASSWORD;
 
-    const { data: user, error } = await supabaseAdmin
+    let { data: user, error } = await supabaseAdmin
       .from('users')
       .select('id, email, password_hash, first_name, last_name, role, is_active, email_verified')
       .eq('email', email)
-      .single();
+      .maybeSingle();
 
-    if (error || !user) {
+    if ((!user || error) && adminEmail && email?.toLowerCase() === adminEmail) {
+      if (!adminPassword || password !== adminPassword) {
+        return res.status(401).json({
+          error: 'Use the primary admin credentials for this account.',
+          code: 'ADMIN_CREDENTIAL_REQUIRED'
+        });
+      }
+
+      const password_hash = await bcrypt.hash(adminPassword, 12);
+      const insertPayload = {
+        email: adminEmail,
+        password_hash,
+        first_name: 'Admin',
+        last_name: 'User',
+        role: 'admin',
+        is_active: true,
+        email_verified: true
+      };
+
+      const created = await supabaseAdmin
+        .from('users')
+        .insert(insertPayload)
+        .select('id, email, password_hash, first_name, last_name, role, is_active, email_verified')
+        .single();
+
+      if (created.error) {
+        console.error('Admin auto-provision failed:', created.error);
+        return res.status(500).json({ error: 'Unable to provision admin account' });
+      }
+
+      user = created.data;
+    }
+
+    if (!user) {
       return res.status(404).json({
         error: 'No account found with this email. Please create an account first.',
         code: 'USER_NOT_FOUND'
@@ -177,12 +212,46 @@ router.post('/login', [
       return res.status(403).json({ error: 'Account has been deactivated' });
     }
 
+    if (adminEmail && user?.email?.toLowerCase() === adminEmail) {
+      if (!adminPassword || password !== adminPassword) {
+        return res.status(401).json({
+          error: 'Use the primary admin credentials for this account.',
+          code: 'ADMIN_CREDENTIAL_REQUIRED'
+        });
+      }
+      const adminHash = await bcrypt.hash(adminPassword, 12);
+      if (!user.password_hash || !(await bcrypt.compare(adminPassword, user.password_hash))) {
+        const { data: updatedUser } = await supabaseAdmin
+          .from('users')
+          .update({ password_hash: adminHash, role: 'admin' })
+          .eq('id', user.id)
+          .select('id, email, password_hash, first_name, last_name, role, is_active, email_verified')
+          .single();
+        if (updatedUser) {
+          user = updatedUser;
+        }
+      }
+    }
+
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
       return res.status(401).json({
         error: 'Incorrect password. Please try again.',
         code: 'INVALID_PASSWORD'
       });
+    }
+
+    if (adminEmail && user?.email?.toLowerCase() === adminEmail && user.role !== 'admin') {
+      const { data: updatedUser, error: roleError } = await supabaseAdmin
+        .from('users')
+        .update({ role: 'admin' })
+        .eq('id', user.id)
+        .select('id, email, password_hash, first_name, last_name, role, is_active, email_verified')
+        .single();
+
+      if (!roleError && updatedUser) {
+        user = updatedUser;
+      }
     }
 
     // Get subscription status

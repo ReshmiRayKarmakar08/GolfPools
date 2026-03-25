@@ -17,9 +17,19 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [adminHintRevealed, setAdminHintRevealed] = useState(false);
   const btnRef = useRef(null);
   const cardRef = useRef(null);
   const logoRef = useRef(null);
+  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@golfpools.com';
+  const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'Admin@12345';
+
+  useEffect(() => {
+    if (mode === 'admin' && adminHintRevealed) {
+      setEmail(adminEmail);
+      setPassword(adminPassword);
+    }
+  }, [mode, adminEmail, adminPassword, adminHintRevealed]);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -80,6 +90,9 @@ export default function AdminLoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) return toast.error('Please fill all fields');
+    if (mode === 'admin' && email.toLowerCase() !== adminEmail.toLowerCase()) {
+      return toast.error('Only the primary admin email is allowed.');
+    }
     setLoading(true);
     try {
       await login(email, password);
@@ -220,12 +233,36 @@ export default function AdminLoginPage() {
                           background: 'rgba(0,198,255,0.04)',
                           border: '1px solid rgba(0,198,255,0.1)',
                         }}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => {
+                          setAdminHintRevealed(true);
+                          setEmail(adminEmail);
+                          setPassword(adminPassword);
+                          toast.success('Admin credentials loaded');
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            setAdminHintRevealed(true);
+                            setEmail(adminEmail);
+                            setPassword(adminPassword);
+                            toast.success('Admin credentials loaded');
+                          }
+                        }}
                       >
                         <div className="text-brand-500 text-[10px] font-mono uppercase tracking-widest mb-2">
                           ADMIN ACCESS
                         </div>
-                        <div className="text-white text-sm">admin@golfpools.com</div>
-                        <div className="text-dark-400 text-xs mt-0.5">Password: Admin@12345</div>
+                        {adminHintRevealed ? (
+                          <>
+                            <div className="text-white text-sm">{adminEmail}</div>
+                            <div className="text-dark-400 text-xs mt-0.5">Password: ••••••••••</div>
+                          </>
+                        ) : (
+                          <div className="text-dark-500 text-xs">
+                            Tap to use the primary admin credentials
+                          </div>
+                        )}
                       </div>
                     </div>
                   ) : (
@@ -248,8 +285,9 @@ export default function AdminLoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="admin-glow-input"
-                    placeholder={mode === 'admin' ? 'admin@golfpools.com' : 'you@email.com'}
+                    placeholder={mode === 'admin' ? adminEmail : 'you@email.com'}
                     autoComplete="email"
+                    readOnly={mode === 'admin'}
                   />
                 </div>
                 <div>
@@ -262,6 +300,7 @@ export default function AdminLoginPage() {
                       className="admin-glow-input pr-12"
                       placeholder={mode === 'admin' ? 'Admin@12345' : '••••••••'}
                       autoComplete="current-password"
+                      readOnly={mode === 'admin' && !adminHintRevealed}
                     />
                     <button
                       type="button"

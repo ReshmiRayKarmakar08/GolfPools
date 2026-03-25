@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{}"
+self.__REACT_LOADABLE_MANIFEST="{\"admin\\\\index.js -> ../../components/admin/AdminCharts\":{\"id\":\"admin\\\\index.js -> ../../components/admin/AdminCharts\",\"files\":[\"static/chunks/src_components_admin_AdminCharts_js.js\"]}}"

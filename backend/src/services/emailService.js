@@ -62,6 +62,11 @@ const sendPasswordResetEmail = async (email, firstName, resetToken) => {
 
 const sendWinnerNotification = async (email, firstName, category, amount, month, year) => {
   const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const payoutChoices = [
+    'UPI (PhonePe, GPay, Paytm)',
+    'Bank Transfer (Account + IFSC)',
+    'NFT payout (wallet address)'
+  ];
   await sendEmail(email, `🎉 You won the ${monthNames[month-1]} ${year} Draw!`, `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 40px; text-align: center;">
@@ -74,6 +79,12 @@ const sendWinnerNotification = async (email, firstName, category, amount, month,
           <p style="color: #666; margin: 5px 0;">Prize Amount</p>
         </div>
         <p>Please log in to your account to upload your proof and claim your winnings.</p>
+        <p style="margin-top: 12px; color: #444; font-size: 14px;">
+          After proof verification, choose your payout method:
+        </p>
+        <ul style="text-align: left; display: inline-block; margin: 8px auto 0; color: #333; font-size: 14px;">
+          ${payoutChoices.map(item => `<li>${item}</li>`).join('')}
+        </ul>
         <a href="${process.env.FRONTEND_URL}/dashboard/winnings" style="display: inline-block; background: #00d4ff; color: #000; padding: 12px 30px; text-decoration: none; border-radius: 6px;">Claim Your Prize</a>
       </div>
     </div>

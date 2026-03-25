@@ -2,6 +2,19 @@
 -- GOLF CHARITY SUBSCRIPTION PLATFORM - SCHEMA
 -- =============================================
 
+-- Clean up existing tables and functions if re-running
+DROP TABLE IF EXISTS email_logs CASCADE;
+DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS winners CASCADE;
+DROP TABLE IF EXISTS draw_entries CASCADE;
+DROP TABLE IF EXISTS monthly_draws CASCADE;
+DROP TABLE IF EXISTS golf_scores CASCADE;
+DROP TABLE IF EXISTS payments CASCADE;
+DROP TABLE IF EXISTS subscriptions CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS charities CASCADE;
+DROP FUNCTION IF EXISTS update_updated_at_column CASCADE;
+
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -55,6 +68,9 @@ CREATE TABLE charities (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add default_charity_id to users (must be done after charities table is created)
+ALTER TABLE users ADD COLUMN default_charity_id UUID REFERENCES charities(id);
 
 -- =============================================
 -- SUBSCRIPTIONS TABLE

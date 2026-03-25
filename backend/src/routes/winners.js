@@ -42,13 +42,15 @@ router.post('/:id/upload-proof', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'Winner record not found' });
     }
 
+    const updatePayload = {
+      proof_url,
+      proof_uploaded_at: new Date().toISOString(),
+      payment_status: 'verified'
+    };
+
     await supabaseAdmin
       .from('winners')
-      .update({
-        proof_url,
-        proof_uploaded_at: new Date().toISOString(),
-        payment_status: 'verified'
-      })
+      .update(updatePayload)
       .eq('id', req.params.id);
 
     res.json({ message: 'Proof uploaded successfully, pending admin verification' });

@@ -43,24 +43,20 @@ function StatusTimeline({ currentStatus }) {
 export default function WinningsPage() {
   const qc = useQueryClient();
   const [uploadId, setUploadId] = useState(null);
-  const [proofFile, setProofFile] = useState(null);
+  const [proofUrl, setProofUrl] = useState('');
 
   const { data: winnings, isLoading } = useQuery('myWinnings', winnersAPI.getMy, {
     select: (r) => r.data.winnings,
   });
 
   const uploadMutation = useMutation(
-    ({ id, file }) => {
-      const fd = new FormData();
-      fd.append('proof', file);
-      return winnersAPI.uploadProof(id, fd);
-    },
+    ({ id, url }) => winnersAPI.uploadProof(id, url),
     {
       onSuccess: () => {
         qc.invalidateQueries('myWinnings');
         toast.success('Proof uploaded!');
         setUploadId(null);
-        setProofFile(null);
+        setProofUrl('');
       },
       onError: (err) => toast.error(err.response?.data?.error || 'Upload failed'),
     }
@@ -197,20 +193,21 @@ export default function WinningsPage() {
                     {uploadId === w.id ? (
                       <div className="flex items-center gap-3">
                         <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => setProofFile(e.target.files?.[0])}
+                          type="url"
+                          value={proofUrl}
+                          onChange={(e) => setProofUrl(e.target.value)}
                           className="input-field text-sm flex-1"
+                          placeholder="Paste proof link (Drive, Dropbox, etc.)"
                         />
                         <button
-                          onClick={() => proofFile && uploadMutation.mutate({ id: w.id, file: proofFile })}
-                          disabled={!proofFile || uploadMutation.isLoading}
+                          onClick={() => proofUrl && uploadMutation.mutate({ id: w.id, url: proofUrl })}
+                          disabled={!proofUrl || uploadMutation.isLoading}
                           className="btn-primary text-sm px-4 py-2.5"
                         >
                           {uploadMutation.isLoading ? 'Uploading...' : 'Upload'}
                         </button>
                         <button
-                          onClick={() => { setUploadId(null); setProofFile(null); }}
+                          onClick={() => { setUploadId(null); setProofUrl(''); }}
                           className="text-dark-500 hover:text-white"
                         ><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                       </div>

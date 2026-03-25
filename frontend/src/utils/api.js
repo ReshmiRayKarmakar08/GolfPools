@@ -112,7 +112,7 @@ export const charitiesAPI = {
 // Winners
 export const winnersAPI = {
   getMy: () => api.get('/winners/my'),
-  uploadProof: (id, data) => api.post(`/winners/${id}/upload-proof`, data),
+  uploadProof: (id, proof_url) => api.post(`/winners/${id}/upload-proof`, { proof_url }),
   // Admin
   getAll: (params) => api.get('/winners', { params }),
   approve: (id, data) => api.patch(`/winners/${id}/approve`, data),

@@ -111,18 +111,16 @@ export default function AdminUsersPage() {
                           >
                             {user.is_active ? 'Deactivate' : 'Activate'}
                           </button>
-                          {user.role !== 'admin' && (
-                            <button
-                              onClick={() => {
-                                if (confirm(`Make ${user.first_name} an admin?`)) {
-                                  updateMutation.mutate({ id: user.id, data: { role: 'admin' } });
-                                }
-                              }}
-                              className="text-xs border border-yellow-500/30 text-yellow-400 px-3 py-1.5 rounded-lg hover:bg-yellow-500/10 transition-colors"
-                            >
-                              Make Admin
-                            </button>
-                          )}
+                          <button
+                            onClick={() => {
+                              if (confirm(`Delete ${user.first_name || 'this user'} permanently?`)) {
+                                updateMutation.mutate({ id: user.id, data: { is_active: false } });
+                              }
+                            }}
+                            className="text-xs border border-red-500/30 text-red-400 px-3 py-1.5 rounded-lg hover:bg-red-500/10 transition-colors"
+                          >
+                            Delete User
+                          </button>
                         </div>
                       </td>
                     </tr>

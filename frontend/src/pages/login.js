@@ -147,6 +147,12 @@ export default function LoginPage() {
             Don't have an account?{' '}
             <Link href="/register" className="text-brand-400 hover:text-brand-300 font-medium">Create one →</Link>
           </p>
+          <p className="text-center mt-2 text-dark-500 text-xs">
+            Admin access?{' '}
+            <Link href="/admin-login" className="text-brand-400 hover:text-brand-300 font-medium">
+              Sign in here →
+            </Link>
+          </p>
         </motion.div>
       </div>
     </>
