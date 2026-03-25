@@ -111,12 +111,32 @@ export default function SubscribePage() {
   }, [router.query]);
 
   useEffect(() => {
-    if (!router.query.payment_id) return;
-    const subId = typeof window !== 'undefined' ? localStorage.getItem('hostedSubscriptionId') : '';
-    if (!subId) return;
-    confirmHostedPayment();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router.query.payment_id]);
+    let interval = null;
+    let timeout = null;
+    if (typeof window === 'undefined') return () => {};
+    const hostedId = localStorage.getItem('hostedSubscriptionId');
+    if (!hostedId) return () => {};
+
+    interval = setInterval(async () => {
+      try {
+        const { data } = await subscriptionsAPI.getCurrent();
+        if (data?.subscription?.status === 'active') {
+          localStorage.removeItem('hostedSubscriptionId');
+          toast.success('Subscription activated!');
+          router.push('/dashboard');
+        }
+      } catch {}
+    }, 5000);
+
+    timeout = setTimeout(() => {
+      if (interval) clearInterval(interval);
+    }, 60000);
+
+    return () => {
+      if (interval) clearInterval(interval);
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [router]);
 
   const plan = PLANS.find((p) => p.id === selectedPlan) || PLANS[0];
   const charityObj = charities?.find((c) => c.id === selectedCharity);
@@ -577,22 +597,28 @@ export default function SubscribePage() {
               )}
 
               <div className="mt-4 glass-card p-4">
-                <div className="text-white text-sm font-semibold mb-2">Hosted Payment Confirmation</div>
+                <div className="text-white text-sm font-semibold mb-2">Hosted Payment Status</div>
                 <p className="text-dark-400 text-xs mb-3">
-                  After paying on the hosted page, paste the Razorpay payment ID here to activate your subscription.
+                  After you pay on the hosted page, we’ll auto‑activate your subscription within a minute.
                 </p>
-                <input
-                  className="input-field text-sm"
-                  placeholder="Razorpay Payment ID (e.g. pay_XXXXXXXXXX)"
-                  value={hostedPaymentId}
-                  onChange={(e) => setHostedPaymentId(e.target.value)}
-                />
                 <button
-                  className="btn-secondary w-full mt-3 py-2.5"
-                  onClick={confirmHostedPayment}
-                  disabled={confirmingHosted}
+                  className="btn-secondary w-full mt-1 py-2.5"
+                  onClick={async () => {
+                    try {
+                      const { data } = await subscriptionsAPI.getCurrent();
+                      if (data?.subscription?.status === 'active') {
+                        localStorage.removeItem('hostedSubscriptionId');
+                        toast.success('Subscription activated!');
+                        router.push('/dashboard');
+                      } else {
+                        toast('Still verifying payment…', { icon: '⏳' });
+                      }
+                    } catch {
+                      toast.error('Unable to check status right now.');
+                    }
+                  }}
                 >
-                  {confirmingHosted ? 'Confirming...' : 'Confirm Hosted Payment'}
+                  Refresh Payment Status
                 </button>
               </div>
 

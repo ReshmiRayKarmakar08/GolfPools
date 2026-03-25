@@ -67,6 +67,116 @@ const calculateDistribution = (totalAmount, charityPct) => {
   };
 };
 
+const verifyWebhookSignature = (rawBody, signature) => {
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+  if (!secret) return false;
+  const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+  return expected === signature;
+};
+
+const activateSubscriptionFromPayment = async ({ userId, subscription, payment }) => {
+  const amount = Number(subscription.amount || 0);
+  const { charityAmount, platformAmount, prizePoolAmount } = calculateDistribution(
+    amount,
+    Number(subscription.charity_percentage || DISTRIBUTION.baseCharityPct)
+  );
+
+  const { data: existingPayment } = await supabaseAdmin
+    .from('payments')
+    .select('id')
+    .eq('razorpay_payment_id', payment.id)
+    .maybeSingle();
+
+  if (!existingPayment) {
+    await supabaseAdmin.from('payments').insert({
+      user_id: userId,
+      subscription_id: subscription.id,
+      razorpay_payment_id: payment.id,
+      razorpay_order_id: payment.order_id || null,
+      razorpay_signature: null,
+      amount,
+      currency: payment.currency || 'INR',
+      status: 'captured',
+      payment_method: payment.method || 'hosted',
+      charity_id: subscription.charity_id,
+      charity_amount: charityAmount,
+      platform_amount: platformAmount,
+      prize_pool_amount: prizePoolAmount
+    });
+  }
+
+  await supabaseAdmin
+    .from('subscriptions')
+    .update({ status: 'active' })
+    .eq('id', subscription.id);
+
+  await emailService.sendSubscriptionConfirmation(
+    subscription.users?.email,
+    subscription.users?.first_name,
+    subscription.plan_type,
+    amount * 100
+  ).catch(console.error);
+
+  await supabaseAdmin.from('notifications').insert({
+    user_id: userId,
+    type: 'subscription_active',
+    title: 'Subscription Activated! 🎉',
+    message: `Your ${subscription.plan_type} subscription is now active. You can enter draws and track your contributions.`,
+    metadata: { subscription_id: subscription.id, plan_type: subscription.plan_type }
+  });
+};
+
+// POST /api/payments/webhook - Razorpay webhook (payment.captured)
+router.post('/webhook', async (req, res) => {
+  try {
+    const signature = req.headers['x-razorpay-signature'];
+    const rawBody = req.rawBody ? req.rawBody.toString('utf8') : JSON.stringify(req.body || {});
+
+    if (!verifyWebhookSignature(rawBody, signature)) {
+      return res.status(400).json({ error: 'Invalid webhook signature' });
+    }
+
+    const event = req.body?.event;
+    const payment = req.body?.payload?.payment?.entity;
+    if (!payment || event !== 'payment.captured') {
+      return res.json({ received: true });
+    }
+
+    const payerEmail = (payment.email || '').toLowerCase();
+    if (!payerEmail) return res.json({ received: true });
+
+    const { data: user } = await supabaseAdmin
+      .from('users')
+      .select('id, email, first_name')
+      .eq('email', payerEmail)
+      .maybeSingle();
+
+    if (!user) return res.json({ received: true });
+
+    const { data: subscription } = await supabaseAdmin
+      .from('subscriptions')
+      .select('*, users(email, first_name)')
+      .eq('user_id', user.id)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!subscription) return res.json({ received: true });
+
+    await activateSubscriptionFromPayment({
+      userId: user.id,
+      subscription,
+      payment
+    });
+
+    res.json({ received: true });
+  } catch (err) {
+    console.error('Webhook error:', err);
+    res.status(500).json({ error: 'Webhook processing failed' });
+  }
+});
+
 const buildSubscriptionPeriod = (plan_type) => {
   const periodStart = new Date();
   const periodEnd = new Date();
