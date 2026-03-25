@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { IconGolf } from '../components/icons/Icons';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/router';
@@ -13,7 +13,13 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuthStore();
   const [loading, setLoading] = useState(false);
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm();
+
+  useEffect(() => {
+    if (router.query.email) {
+      setValue('email', String(router.query.email));
+    }
+  }, [router.query.email, setValue]);
 
   const onSubmit = async (data) => {
     setLoading(true);
@@ -23,7 +29,21 @@ export default function LoginPage() {
       toast.success(`Welcome back, ${user?.first_name}!`);
       router.push(user?.role === 'admin' ? '/admin' : '/dashboard');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Login failed');
+      const code = err.response?.data?.code;
+      const message = err.response?.data?.error || 'Login failed';
+
+      if (code === 'USER_NOT_FOUND') {
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem(
+            'registerPrefill',
+            JSON.stringify({ email: data.email, password: data.password })
+          );
+        }
+        toast.error('You are not registered. Redirecting to create account...');
+        router.push(`/register?email=${encodeURIComponent(data.email)}&from=login`);
+      } else {
+        toast.error(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -79,6 +99,11 @@ export default function LoginPage() {
                   autoComplete="current-password"
                 />
                 {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password.message}</p>}
+                <div className="mt-2 text-right">
+                  <Link href="/forgot-password" className="text-xs text-brand-400 hover:text-brand-300">
+                    Forgot password?
+                  </Link>
+                </div>
               </div>
               <motion.button
                 type="submit"

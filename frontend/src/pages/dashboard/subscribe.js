@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from 'react-query';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
 import { charitiesAPI, paymentsAPI, subscriptionsAPI } from '../../utils/api';
@@ -40,6 +40,30 @@ const PLANS = [
   },
 ];
 
+const BASE_CHARITY_PCT = 10;
+const BASE_PLATFORM_PCT = 15;
+const MIN_PLATFORM_AMOUNT = 50;
+
+const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+
+const calculateDistribution = (totalAmount, charityPct) => {
+  const baseCharityAmount = round2((totalAmount * BASE_CHARITY_PCT) / 100);
+  const basePlatformAmount = round2((totalAmount * BASE_PLATFORM_PCT) / 100);
+  const basePrizePoolAmount = round2(totalAmount - baseCharityAmount - basePlatformAmount);
+
+  const charityAmount = round2((totalAmount * charityPct) / 100);
+  const extraCharity = Math.max(0, round2(charityAmount - baseCharityAmount));
+
+  const platformReductionCapacity = Math.max(0, round2(basePlatformAmount - MIN_PLATFORM_AMOUNT));
+  const platformReduction = Math.min(extraCharity, platformReductionCapacity);
+  const platformAmount = round2(basePlatformAmount - platformReduction);
+
+  const remainingExtra = Math.max(0, round2(extraCharity - platformReductionCapacity));
+  const prizePoolAmount = round2(Math.max(0, basePrizePoolAmount - remainingExtra));
+
+  return { charityAmount, platformAmount, prizePoolAmount };
+};
+
 // Load Razorpay script
 const loadRazorpay = () =>
   new Promise((resolve) => {
@@ -54,6 +78,7 @@ const loadRazorpay = () =>
 export default function SubscribePage() {
   const router = useRouter();
   const { user, refreshUser } = useAuthStore();
+  const hostedPaymentPageBase = process.env.NEXT_PUBLIC_RAZORPAY_PAYMENT_PAGE_URL || '';
 
   const defaultPlan = router.query.plan || 'monthly';
   const defaultCharity = router.query.charity || '';
@@ -62,6 +87,9 @@ export default function SubscribePage() {
   const [selectedCharity, setSelectedCharity] = useState(defaultCharity);
   const [charityPct, setCharityPct] = useState(10);
   const [paying, setPaying] = useState(false);
+  const [showPaymentSummary, setShowPaymentSummary] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [upiId, setUpiId] = useState('');
 
   const { data: existingSub } = useQuery('subscription', subscriptionsAPI.getCurrent, {
     select: (r) => r.data.subscription,
@@ -78,8 +106,14 @@ export default function SubscribePage() {
 
   const plan = PLANS.find((p) => p.id === selectedPlan) || PLANS[0];
   const charityObj = charities?.find((c) => c.id === selectedCharity);
-  const charityAmount = Math.round((plan.price * charityPct) / 100);
-  const prizePool = Math.round(plan.price * 0.75);
+  const { charityAmount, platformAmount, prizePoolAmount } = calculateDistribution(plan.price, charityPct);
+  const mandatoryCharityAmount = Math.round(plan.price * 0.1);
+  const charityBarPct = Math.round((charityAmount / plan.price) * 100);
+  const prizePoolBarPct = Math.round((prizePoolAmount / plan.price) * 100);
+  const platformBarPct = Math.max(0, 100 - charityBarPct - prizePoolBarPct);
+  const hostedPaymentUrl = hostedPaymentPageBase
+    ? `${hostedPaymentPageBase}${hostedPaymentPageBase.includes('?') ? '&' : '?'}plan=${selectedPlan}&charity=${selectedCharity || ''}&charityPct=${charityPct}`
+    : '';
 
   const handleSubscribe = async () => {
     if (!selectedCharity) {
@@ -114,6 +148,46 @@ export default function SubscribePage() {
         prefill: {
           name: `${user?.first_name} ${user?.last_name}`,
           email: user?.email,
+          contact: user?.phone || '',
+          method: upiId ? 'upi' : undefined,
+          vpa: upiId || undefined,
+        },
+        method: {
+          upi: true,
+          card: true,
+          netbanking: true,
+          wallet: false,
+          emi: false,
+          paylater: false
+        },
+        config: {
+          display: {
+            blocks: {
+              upi_preferred: {
+                name: 'Pay by UPI',
+                instruments: [
+                  {
+                    method: 'upi',
+                    flows: ['collect', 'intent', 'qr'],
+                    apps: ['phonepe', 'google_pay', 'paytm']
+                  }
+                ]
+              },
+              netbanking_preferred: {
+                name: 'Popular Banks',
+                instruments: [
+                  {
+                    method: 'netbanking',
+                    banks: ['SBIN', 'HDFC', 'ICIC', 'UTIB', 'KKBK', 'UCBA', 'BARB', 'PUNB']
+                  }
+                ]
+              }
+            },
+            sequence: ['block.upi_preferred', 'block.netbanking_preferred', 'method.card'],
+            preferences: {
+              show_default_blocks: true
+            }
+          }
         },
         theme: {
           color: '#00c6ff',
@@ -158,7 +232,7 @@ export default function SubscribePage() {
 
   if (existingSub?.status === 'active') {
     return (
-      <DashboardLayout title="Subscription">
+      <DashboardLayout title="Subscription" legalFooterMaxWidth="max-w-lg">
         <div className="max-w-lg mx-auto text-center glass-card p-10">
           <div className="mb-4"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#00E5CC" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="9 12 12 15 16 9"/></svg></div>
           <h2 className="text-white font-bold text-xl mb-2">You're already subscribed!</h2>
@@ -177,7 +251,7 @@ export default function SubscribePage() {
   }
 
   return (
-    <DashboardLayout title="Subscribe">
+    <DashboardLayout title="Subscribe" legalFooterMaxWidth="max-w-4xl">
       <Head>
         <title>Subscribe — Golf Charity Platform</title>
       </Head>
@@ -336,14 +410,14 @@ export default function SubscribePage() {
                   },
                   {
                     label: '★ Prize Pool',
-                    value: prizePool,
-                    pct: 75,
+                    value: prizePoolAmount,
+                    pct: prizePoolBarPct,
                     color: '#FFD700',
                   },
                   {
                     label: '⚙️ Platform',
-                    value: plan.price - charityAmount - prizePool,
-                    pct: 15,
+                    value: platformAmount,
+                    pct: platformBarPct,
                     color: '#7983a8',
                   },
                 ].map((item, i) => (
@@ -357,11 +431,11 @@ export default function SubscribePage() {
                 {/* Bar breakdown */}
                 <div className="flex h-2 rounded-full overflow-hidden mt-3">
                   <div
-                    style={{ width: `${charityPct}%`, background: '#00E5CC' }}
+                    style={{ width: `${charityBarPct}%`, background: '#00E5CC' }}
                     className="transition-all duration-300"
                   />
-                  <div style={{ width: '75%', background: '#FFD700' }} />
-                  <div style={{ flex: 1, background: '#3b437d' }} />
+                  <div style={{ width: `${prizePoolBarPct}%`, background: '#FFD700' }} />
+                  <div style={{ width: `${platformBarPct}%`, background: '#3b437d' }} />
                 </div>
               </div>
 
@@ -387,7 +461,10 @@ export default function SubscribePage() {
 
               {/* Pay button */}
               <motion.button
-                onClick={handleSubscribe}
+                onClick={() => {
+                  setConsentChecked(false);
+                  setShowPaymentSummary(true);
+                }}
                 disabled={paying || !selectedCharity}
                 className="btn-gold w-full py-4 text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                 whileHover={{ scale: paying ? 1 : 1.02 }}
@@ -417,9 +494,19 @@ export default function SubscribePage() {
                     Opening Payment...
                   </span>
                 ) : (
-                  `Pay ${plan.display} via Razorpay →`
+                  `Review & Pay ${plan.display} →`
                 )}
               </motion.button>
+
+              {hostedPaymentUrl && (
+                <button
+                  type="button"
+                  onClick={() => window.open(hostedPaymentUrl, '_blank', 'noopener,noreferrer')}
+                  className="btn-secondary w-full py-3 mt-3 text-sm"
+                >
+                  Pay on Razorpay Hosted Page
+                </button>
+              )}
 
               {!selectedCharity && (
                 <p className="text-amber-400 text-xs text-center mt-2">
@@ -439,6 +526,139 @@ export default function SubscribePage() {
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showPaymentSummary && (
+          <motion.div
+            className="modal-overlay-glass z-[70]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => {
+              if (!paying) {
+                setShowPaymentSummary(false);
+                setConsentChecked(false);
+              }
+            }}
+          >
+            <motion.div
+              className="glass-card w-full max-w-md p-6"
+              initial={{ opacity: 0, y: 24, scale: 0.96, filter: 'blur(4px)' }}
+              animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: 16, scale: 0.97 }}
+              transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-white text-xl font-semibold">Payment Summary</h3>
+                <button
+                  type="button"
+                  className="text-dark-500 hover:text-white text-sm"
+                  onClick={() => {
+                    if (!paying) {
+                      setShowPaymentSummary(false);
+                      setConsentChecked(false);
+                    }
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="rounded-xl p-4 mb-4" style={{ border: '1px solid rgba(255,255,255,0.09)', background: 'rgba(255,255,255,0.02)' }}>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-dark-400">Plan Price</span>
+                    <span className="text-white font-mono">₹{plan.price.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-dark-400">Charity Impact (+10% contribution)</span>
+                    <span className="text-brand-400 font-mono">₹{mandatoryCharityAmount.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-dark-400">Selected Charity Split ({charityPct}%)</span>
+                    <span className="text-white font-mono">₹{charityAmount.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="pt-2 mt-2 border-t border-white/10 flex items-center justify-between">
+                    <span className="text-white font-semibold">Total Amount</span>
+                    <span className="text-2xl gradient-text font-display">{plan.display}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-xs text-dark-400 mb-2">
+                  UPI ID (optional for direct collect request)
+                </label>
+                <input
+                  type="text"
+                  value={upiId}
+                  onChange={(e) => setUpiId(e.target.value.trim())}
+                  className="input-field text-sm"
+                  placeholder="example@oksbi"
+                />
+              </div>
+
+              <label className="mb-4 flex items-start gap-3 rounded-xl p-3 border border-white/10 bg-white/5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={consentChecked}
+                  onChange={(e) => setConsentChecked(e.target.checked)}
+                  className="mt-1 accent-brand-500"
+                />
+                <span className="text-sm text-dark-200 leading-relaxed">
+                  I provide explicit consent for GolfPools to tokenize my card for secure recurring payments.
+                </span>
+              </label>
+
+              <div className="mb-5 inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/12 bg-white/5">
+                <span className="w-2 h-2 rounded-full bg-brand-400" />
+                <span className="text-xs text-dark-300 tracking-wide">Securely Powered by Razorpay</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPaymentSummary(false);
+                    setConsentChecked(false);
+                  }}
+                  disabled={paying}
+                  className="btn-secondary flex-1 py-2.5"
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await handleSubscribe();
+                    setShowPaymentSummary(false);
+                    setConsentChecked(false);
+                  }}
+                  disabled={paying || !consentChecked}
+                  className="btn-primary flex-1 py-2.5 disabled:opacity-50"
+                >
+                  {paying ? 'Opening...' : 'Pay In-App'}
+                </button>
+              </div>
+              {hostedPaymentUrl && (
+                <button
+                  type="button"
+                  onClick={() => window.open(hostedPaymentUrl, '_blank', 'noopener,noreferrer')}
+                  className="btn-secondary w-full mt-3 py-2.5"
+                >
+                  Pay on Hosted Page
+                </button>
+              )}
+              {!consentChecked && (
+                <p className="text-[11px] text-amber-300 mt-2">
+                  Please provide consent to continue.
+                </p>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </DashboardLayout>
   );
 }

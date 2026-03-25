@@ -1,10 +1,1 @@
-{
-  "/_app": "pages/_app.js",
-  "/_error": "pages/_error.js",
-  "/_document": "pages/_document.js",
-  "/login": "pages/login.js",
-  "/dashboard": "pages/dashboard.js",
-  "/dashboard/scores": "pages/dashboard/scores.js",
-  "/dashboard/winnings": "pages/dashboard/winnings.js",
-  "/dashboard/draws": "pages/dashboard/draws.js"
-}
+{"/_error":"pages/_error.js","/admin/analytics":"pages/admin/analytics.html","/admin/charities":"pages/admin/charities.html","/_app":"pages/_app.js","/admin":"pages/admin.html","/admin/draws":"pages/admin/draws.html","/admin/users":"pages/admin/users.html","/admin/winners":"pages/admin/winners.html","/contact":"pages/contact.html","/charities":"pages/charities.html","/dashboard/draws":"pages/dashboard/draws.html","/dashboard/charity":"pages/dashboard/charity.html","/dashboard/subscription":"pages/dashboard/subscription.html","/dashboard":"pages/dashboard.html","/dashboard/scores":"pages/dashboard/scores.html","/dashboard/profile":"pages/dashboard/profile.html","/":"pages/index.html","/dashboard/subscribe":"pages/dashboard/subscribe.html","/forgot-password":"pages/forgot-password.html","/grievance-redressal":"pages/grievance-redressal.html","/dashboard/winnings":"pages/dashboard/winnings.html","/refund-policy":"pages/refund-policy.html","/login":"pages/login.html","/register":"pages/register.html","/privacy":"pages/privacy.html","/reset-password":"pages/reset-password.html","/terms":"pages/terms.html","/_document":"pages/_document.js","/404":"pages/404.html"}

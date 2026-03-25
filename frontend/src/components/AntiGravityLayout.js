@@ -7,6 +7,7 @@ import useAuthStore from '../context/authStore';
 import ParticleCanvas from './effects/ParticleCanvas';
 import { IconGolf } from './icons/Icons';
 import MagneticButton from './effects/MagneticButton';
+import LegalFooter from './legal/LegalFooter';
 
 const pageVariants = {
   initial: { opacity: 0, y: 20, filter: 'blur(4px)' },
@@ -47,21 +48,10 @@ export default function AntiGravityLayout({ children }) {
     }
   }, [isPublicRoute]);
 
-  // Dashboard pages use their own DashboardLayout
+  // Dashboard/admin pages use their own layout and should render directly.
+  // Keeping them outside the global AnimatePresence avoids route-transition blank states.
   if (!isPublicRoute) {
-    return (
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={router.pathname}
-          initial="initial"
-          animate="enter"
-          exit="exit"
-          variants={pageVariants}
-        >
-          {children}
-        </motion.div>
-      </AnimatePresence>
-    );
+    return children;
   }
 
   return (
@@ -142,6 +132,7 @@ export default function AntiGravityLayout({ children }) {
             {children}
           </motion.div>
         </AnimatePresence>
+        {router.pathname === '/' && <LegalFooter variant="corporate" />}
       </div>
     </>
   );

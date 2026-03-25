@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import gsap from 'gsap';
 import useAuthStore from '../../context/authStore';
 import { IconBarChart, IconTarget, IconDice, IconTrophy, IconHeart, IconCreditCard, IconUser, IconUsers, IconTrendingUp, IconShuffle, IconGolf, IconLogOut } from '../icons/Icons';
+import LegalFooter from '../legal/LegalFooter';
 
 const USER_NAV = [
   { href: '/dashboard', label: 'Overview', icon: <IconBarChart size={18} /> },
@@ -33,7 +34,7 @@ const pageVariants = {
   exit: { opacity: 0, y: -8, transition: { duration: 0.2 } },
 };
 
-export default function DashboardLayout({ children, title }) {
+export default function DashboardLayout({ children, title, legalFooterMaxWidth = 'max-w-6xl' }) {
   const router = useRouter();
   const { user, logout, isAuthenticated, isLoading } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -177,7 +178,7 @@ export default function DashboardLayout({ children, title }) {
         )}
 
         {/* Main content */}
-        <main className="flex-1 min-w-0">
+        <main className="flex-1 min-w-0 flex flex-col min-h-screen">
           {/* Top bar */}
           <header
             className="sticky top-0 z-20 flex items-center justify-between px-6 py-4"
@@ -207,9 +208,10 @@ export default function DashboardLayout({ children, title }) {
           </header>
 
           {/* Page content */}
-          <div className="p-6">
+          <div className="p-6 flex-1">
             {children}
           </div>
+          <LegalFooter compact maxWidthClass={legalFooterMaxWidth} variant="simple" />
         </main>
       </div>
     </>

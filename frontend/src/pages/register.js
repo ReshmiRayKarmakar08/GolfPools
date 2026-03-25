@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { IconGolf } from '../components/icons/Icons';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -21,14 +20,40 @@ const stepVariants = {
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register: registerUser } = useAuthStore();
+  const { register: registerUser, isAuthenticated, isLoading } = useAuthStore();
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [selectedCharity, setSelectedCharity] = useState(null);
   const [selectedPlan, setSelectedPlan] = useState(router.query.plan || 'monthly');
   const [loading, setLoading] = useState(false);
 
-  const { register, handleSubmit, getValues, formState: { errors } } = useForm();
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm();
+
+  useEffect(() => {
+    if (router.query.email) {
+      setValue('email', String(router.query.email));
+    }
+
+    if (typeof window !== 'undefined') {
+      const prefillRaw = sessionStorage.getItem('registerPrefill');
+      if (prefillRaw) {
+        try {
+          const prefill = JSON.parse(prefillRaw);
+          if (prefill.email) setValue('email', prefill.email);
+          if (prefill.password) setValue('password', prefill.password);
+        } catch {}
+        sessionStorage.removeItem('registerPrefill');
+      }
+    }
+  }, [router.query.email, setValue]);
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (!isAuthenticated) return;
+
+    const plan = router.query.plan ? String(router.query.plan) : 'monthly';
+    router.replace(`/dashboard/subscribe?plan=${encodeURIComponent(plan)}`);
+  }, [isAuthenticated, isLoading, router]);
 
   const { data: charities } = useQuery('charities', () => charitiesAPI.getAll(), {
     select: (r) => r.data.charities,
@@ -46,7 +71,7 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      await registerUser({
+      const payload = {
         email: data.email,
         password: data.password,
         first_name: data.first_name,
@@ -54,13 +79,26 @@ export default function RegisterPage() {
         phone: data.phone,
         golf_club: data.golf_club,
         handicap: data.handicap ? parseFloat(data.handicap) : null,
-        charity_id: selectedCharity,
         plan_type: selectedPlan,
-      });
+      };
+
+      if (selectedCharity) {
+        payload.charity_id = selectedCharity;
+      }
+
+      await registerUser(payload);
       toast.success('Account created! Redirecting to payment...');
       router.push(`/dashboard/subscribe?plan=${selectedPlan}&charity=${selectedCharity || ''}`);
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Registration failed');
+      const msg =
+        err.response?.data?.error ||
+        err.response?.data?.errors?.[0]?.msg ||
+        'Registration failed';
+      toast.error(msg);
+
+      if (msg.toLowerCase().includes('already registered')) {
+        router.push(`/login?email=${encodeURIComponent(data.email)}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -83,13 +121,6 @@ export default function RegisterPage() {
         >
           {/* Header */}
           <div className="text-center mb-8">
-            <motion.div
-              className="text-4xl mb-3"
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            >
-              <IconGolf className="text-brand-400" size={40} />
-            </motion.div>
             <h1 className="font-display tracking-wider text-3xl text-white">JOIN GOLFPOOLS</h1>
             <p className="text-dark-400 mt-2">Create your account in minutes</p>
           </div>

@@ -7,9 +7,15 @@ const { authenticate } = require('../middleware/auth');
 const emailService = require('../services/emailService');
 
 const IS_SANDBOX = process.env.PAYMENT_SANDBOX === 'true';
+const hasRazorpayKeys = Boolean(
+  process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET
+);
 
 const getRazorpay = () => {
   if (IS_SANDBOX) return null;
+  if (!hasRazorpayKeys) {
+    throw new Error('Razorpay keys are missing. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET.');
+  }
   const Razorpay = require('razorpay');
   return new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID,
@@ -23,11 +29,42 @@ const PLANS = {
   yearly: { price: 999900, name: 'Yearly Plan' }       // ₹9999/year
 };
 
-// Prize pool distribution
+// Distribution model:
+// - Base split at 10% charity: 10% charity, 15% platform, 75% prize pool
+// - As user increases charity percentage, platform decreases first
+// - Platform never goes below minimum fixed amount
 const DISTRIBUTION = {
-  charity: 0.10,         // 10% to charity
-  platform: 0.15,        // 15% platform fee
-  prize_pool: 0.75       // 75% to prize pool
+  baseCharityPct: 10,
+  basePlatformPct: 15,
+  minPlatformAmount: 50
+};
+
+const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+
+const calculateDistribution = (totalAmount, charityPct) => {
+  const baseCharityAmount = round2((totalAmount * DISTRIBUTION.baseCharityPct) / 100);
+  const basePlatformAmount = round2((totalAmount * DISTRIBUTION.basePlatformPct) / 100);
+  const basePrizePoolAmount = round2(totalAmount - baseCharityAmount - basePlatformAmount);
+
+  const charityAmount = round2((totalAmount * charityPct) / 100);
+  const extraCharity = Math.max(0, round2(charityAmount - baseCharityAmount));
+
+  const platformReductionCapacity = Math.max(
+    0,
+    round2(basePlatformAmount - DISTRIBUTION.minPlatformAmount)
+  );
+
+  const platformReduction = Math.min(extraCharity, platformReductionCapacity);
+  const platformAmount = round2(basePlatformAmount - platformReduction);
+
+  const remainingExtra = Math.max(0, round2(extraCharity - platformReductionCapacity));
+  const prizePoolAmount = round2(Math.max(0, basePrizePoolAmount - remainingExtra));
+
+  return {
+    charityAmount,
+    platformAmount,
+    prizePoolAmount
+  };
 };
 
 // POST /api/payments/create-order - Create Razorpay order
@@ -130,6 +167,7 @@ router.post('/verify', [
     }
 
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, subscription_id } = req.body;
+    let paymentMethod = null;
 
     if (!IS_SANDBOX) {
       // PRODUCTION: Verify Razorpay signature
@@ -141,8 +179,23 @@ router.post('/verify', [
       if (expectedSignature !== razorpay_signature) {
         return res.status(400).json({ error: 'Invalid payment signature' });
       }
+
+      // PRODUCTION: Fetch payment from Razorpay and verify final state
+      const razorpay = getRazorpay();
+      const payment = await razorpay.payments.fetch(razorpay_payment_id);
+
+      if (!payment || payment.status !== 'captured') {
+        return res.status(400).json({ error: 'Payment not captured yet' });
+      }
+
+      if (payment.order_id !== razorpay_order_id) {
+        return res.status(400).json({ error: 'Payment/order mismatch' });
+      }
+
+      paymentMethod = payment.method || null;
     } else {
       console.log(`[SANDBOX] Auto-verifying payment for subscription: ${subscription_id}`);
+      paymentMethod = 'sandbox';
     }
 
     // Get subscription
@@ -157,10 +210,11 @@ router.post('/verify', [
       return res.status(404).json({ error: 'Subscription not found' });
     }
 
-    const amount = subscription.amount;
-    const charityAmount = amount * (subscription.charity_percentage / 100);
-    const platformAmount = amount * DISTRIBUTION.platform;
-    const prizePoolAmount = amount - charityAmount - platformAmount;
+    const amount = Number(subscription.amount || 0);
+    const { charityAmount, platformAmount, prizePoolAmount } = calculateDistribution(
+      amount,
+      Number(subscription.charity_percentage || DISTRIBUTION.baseCharityPct)
+    );
 
     // Create payment record
     await supabaseAdmin.from('payments').insert({
@@ -172,6 +226,7 @@ router.post('/verify', [
       amount,
       currency: 'INR',
       status: 'captured',
+      payment_method: paymentMethod,
       charity_id: subscription.charity_id,
       charity_amount: charityAmount,
       platform_amount: platformAmount,
@@ -335,9 +390,15 @@ if (IS_SANDBOX) {
         currency: 'INR',
         status: 'captured',
         charity_id,
-        charity_amount: (plan.price / 100) * (charity_percentage / 100),
-        platform_amount: (plan.price / 100) * DISTRIBUTION.platform,
-        prize_pool_amount: (plan.price / 100) * (1 - charity_percentage / 100 - DISTRIBUTION.platform)
+        ...(() => {
+          const amount = plan.price / 100;
+          const result = calculateDistribution(amount, Number(charity_percentage || DISTRIBUTION.baseCharityPct));
+          return {
+            charity_amount: result.charityAmount,
+            platform_amount: result.platformAmount,
+            prize_pool_amount: result.prizePoolAmount
+          };
+        })()
       });
 
       console.log(`[SANDBOX] Auto-activated ${plan_type} subscription for user ${req.user.id}`);

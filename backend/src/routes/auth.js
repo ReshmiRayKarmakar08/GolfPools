@@ -40,11 +40,16 @@ router.post('/register', [
     const { email, password, first_name, last_name, phone, charity_id, golf_club, handicap } = req.body;
 
     // Check if user exists
-    const { data: existingUser } = await supabaseAdmin
+    const { data: existingUser, error: existingUserError } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('email', email)
-      .single();
+      .maybeSingle();
+
+    if (existingUserError) {
+      console.error('Register existing user check error:', existingUserError);
+      return res.status(500).json({ error: 'Unable to validate existing account' });
+    }
 
     if (existingUser) {
       return res.status(409).json({ error: 'Email already registered' });
@@ -54,23 +59,46 @@ router.post('/register', [
     const password_hash = await bcrypt.hash(password, 12);
     const verification_token = uuidv4();
 
-    // Create user
-    const { data: user, error } = await supabaseAdmin
+    // Create user (with fallback if optional column does not exist in DB)
+    const insertPayload = {
+      email,
+      password_hash,
+      first_name,
+      last_name,
+      phone: phone || null,
+      golf_club: golf_club || null,
+      handicap: handicap || null,
+      email_verification_token: verification_token
+    };
+
+    let { data: user, error } = await supabaseAdmin
       .from('users')
-      .insert({
-        email,
-        password_hash,
-        first_name,
-        last_name,
-        phone: phone || null,
-        golf_club: golf_club || null,
-        handicap: handicap || null,
-        email_verification_token: verification_token
-      })
+      .insert(insertPayload)
       .select('id, email, first_name, last_name, role')
       .single();
 
-    if (error) throw error;
+    // Some deployments may not yet have email_verification_token column migrated.
+    if (error && (error.code === '42703' || `${error.message}`.toLowerCase().includes('email_verification_token'))) {
+      const fallbackPayload = { ...insertPayload };
+      delete fallbackPayload.email_verification_token;
+
+      const retry = await supabaseAdmin
+        .from('users')
+        .insert(fallbackPayload)
+        .select('id, email, first_name, last_name, role')
+        .single();
+
+      user = retry.data;
+      error = retry.error;
+    }
+
+    if (error) {
+      console.error('Register insert error:', error);
+      if (error.code === '23505') {
+        return res.status(409).json({ error: 'Email already registered' });
+      }
+      return res.status(500).json({ error: 'Registration failed. Please try again.' });
+    }
 
     // If charity selected, store preference in profile
     if (charity_id) {
@@ -100,7 +128,7 @@ router.post('/register', [
     });
   } catch (err) {
     console.error('Register error:', err);
-    res.status(500).json({ error: 'Registration failed' });
+    res.status(500).json({ error: 'Registration failed. Please try again.' });
   }
 });
 
@@ -124,7 +152,10 @@ router.post('/login', [
       .single();
 
     if (error || !user) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(404).json({
+        error: 'No account found with this email. Please create an account first.',
+        code: 'USER_NOT_FOUND'
+      });
     }
 
     if (!user.is_active) {
@@ -133,7 +164,10 @@ router.post('/login', [
 
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({
+        error: 'Incorrect password. Please try again.',
+        code: 'INVALID_PASSWORD'
+      });
     }
 
     // Get subscription status

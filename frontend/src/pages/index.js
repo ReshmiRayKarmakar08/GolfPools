@@ -5,8 +5,8 @@ import { motion } from 'framer-motion';
 import { useQuery } from 'react-query';
 import gsap from 'gsap';
 import { charitiesAPI } from '../utils/api';
-import useAuthStore from '../context/authStore';
 import MagneticButton from '../components/effects/MagneticButton';
+import useAuthStore from '../context/authStore';
 import { IconRocket, IconTarget, IconStar, IconTrophy, IconCrown, IconMedal, IconRefresh, IconHeart, IconGolf, IconCheck } from '../components/icons/Icons';
 
 const PLANS = [
@@ -130,7 +130,7 @@ function PrizeOrb({ tier, icon, pct, desc, delay, glowColor }) {
 export default function Home() {
   const { isAuthenticated } = useAuthStore();
   const heroRef = useRef(null);
-  const galleryRef = useRef(null);
+  const planRefs = useRef([]);
 
   const { data } = useQuery('featuredCharities', () => charitiesAPI.getAll({ featured: true }), {
     select: (r) => r.data.charities?.slice(0, 6),
@@ -153,33 +153,30 @@ export default function Home() {
     });
   }, []);
 
-  // Horizontal scroll with momentum (mouse wheel)
+
+
+  // Pricing tiers drift into view to surface price transparency before signup.
   useEffect(() => {
-    const gallery = galleryRef.current;
-    if (!gallery) return;
+    const cards = planRefs.current.filter(Boolean);
+    if (!cards.length) return;
 
-    let velocity = 0;
-    let isScrolling = false;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          gsap.fromTo(
+            entry.target,
+            { opacity: 0, y: 40, x: -18, rotateZ: -1.5, filter: 'blur(3px)' },
+            { opacity: 1, y: 0, x: 0, rotateZ: 0, filter: 'blur(0px)', duration: 0.75, ease: 'power2.out' }
+          );
+          observer.unobserve(entry.target);
+        });
+      },
+      { threshold: 0.35 }
+    );
 
-    const handleWheel = (e) => {
-      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        e.preventDefault();
-        velocity += e.deltaY * 0.5;
-      }
-    };
-
-    const animate = () => {
-      if (Math.abs(velocity) > 0.5) {
-        gallery.scrollLeft += velocity;
-        velocity *= 0.92; // friction
-      }
-      requestAnimationFrame(animate);
-    };
-
-    gallery.addEventListener('wheel', handleWheel, { passive: false });
-    animate();
-
-    return () => gallery.removeEventListener('wheel', handleWheel);
+    cards.forEach((card) => observer.observe(card));
+    return () => observer.disconnect();
   }, []);
 
   return (
@@ -246,13 +243,29 @@ export default function Home() {
               transition={{ delay: 1.3, duration: 0.6 }}
             >
               <MagneticButton strength={0.3}>
-                <Link href="/register" className="btn-primary text-base px-10 py-4 relative z-10">
+                <Link href={isAuthenticated ? '/dashboard/subscribe?plan=monthly' : '/register?plan=monthly'} className="btn-primary text-base px-10 py-4 relative z-10">
                   Start Playing for ₹999/mo →
                 </Link>
               </MagneticButton>
-              <Link href="#how-it-works" className="btn-secondary text-base px-8 py-4">
-                See How It Works
-              </Link>
+                <Link href="#how-it-works" className="btn-secondary text-base px-8 py-4">
+                  See How It Works
+                </Link>
+              </motion.div>
+
+            <motion.div
+              className="mt-7 glass-card px-5 py-4 max-w-2xl mx-auto"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.5, duration: 0.5 }}
+            >
+              <p className="text-xs uppercase tracking-[0.22em] text-dark-500 mb-2">Transparent Pricing</p>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-2 sm:gap-6 text-sm">
+                <span className="text-white">Monthly: <span className="font-mono text-brand-400">₹999</span></span>
+                <span className="hidden sm:inline text-dark-600">•</span>
+                <span className="text-white">Yearly: <span className="font-mono text-brand-400">₹9,999</span></span>
+                <span className="hidden sm:inline text-dark-600">•</span>
+                <span className="text-dark-300">Includes minimum 10% charity contribution</span>
+              </div>
             </motion.div>
           </motion.div>
 
@@ -388,37 +401,44 @@ export default function Home() {
                 <p className="text-dark-300 max-w-xl mx-auto">At least 10% of your subscription goes to the charity you select. You choose where your money does good.</p>
               </div>
 
-              {/* Horizontal scroll gallery */}
-              <div ref={galleryRef} className="horizontal-scroll-gallery pb-4 mb-8">
-                {data.map((charity, i) => (
-                  <motion.div
-                    key={charity.id}
-                    className="glass-card-hover p-6 w-[300px] md:w-[340px] floating-card"
-                    initial={{ opacity: 0, x: 50 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1, duration: 0.5 }}
-                  >
-                    <div className="flex items-center gap-3 mb-4">
-                      <motion.div
-                        className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center text-xl"
-                        animate={{ y: [0, -4, 0] }}
-                        transition={{ duration: 2 + i * 0.3, repeat: Infinity }}
-                      >
+              {/* Continuous Sliding Marquee */}
+              <div
+                className="flex overflow-hidden pb-4 mb-8 relative -mx-6 px-6 md:-mx-12 md:px-12"
+                style={{
+                  maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
+                  WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
+                }}
+              >
+                <motion.div
+                  className="flex gap-6 min-w-max"
+                  animate={{ x: ['-50%', '0%'] }}
+                  transition={{ duration: 40, ease: 'linear', repeat: Infinity }}
+                >
+                  {/* Replicate data to ensure enough length for a seamless loop */}
+                  {[...data, ...data, ...data, ...data].map((charity, i) => (
+                    <div
+                      key={`${charity.id}-${i}`}
+                      className="glass-card p-6 w-[300px] md:w-[340px] shrink-0 floating-card"
+                    >
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center text-xl">
                           <IconHeart className="text-green-400" size={20} />
-                      </motion.div>
-                      <div>
-                        <div className="text-white font-semibold text-sm">{charity.name}</div>
-                        <div className="text-brand-500 text-xs">{charity.category}</div>
+                        </div>
+                        <div>
+                          <div className="text-white font-semibold text-sm">{charity.name}</div>
+                          <div className="text-brand-500 text-xs">{charity.category}</div>
+                        </div>
+                      </div>
+                      <p className="text-dark-400 text-sm leading-relaxed min-h-[40px]">{charity.short_description}</p>
+                      <div className="mt-4 flex items-center justify-between">
+                        <div className="text-xs text-dark-500">Total raised</div>
+                        <div className="text-brand-400 font-mono font-bold text-sm">
+                          ₹{(charity.total_raised || 0).toLocaleString('en-IN')}
+                        </div>
                       </div>
                     </div>
-                    <p className="text-dark-400 text-sm leading-relaxed min-h-[40px]">{charity.short_description}</p>
-                    <div className="mt-4 flex items-center justify-between">
-                      <div className="text-xs text-dark-500">Total raised</div>
-                      <div className="text-brand-400 font-mono font-bold text-sm">₹{(charity.total_raised || 0).toLocaleString('en-IN')}</div>
-                    </div>
-                  </motion.div>
-                ))}
+                  ))}
+                </motion.div>
               </div>
 
               <div className="text-center">
@@ -440,15 +460,14 @@ export default function Home() {
             </div>
             <div className="grid md:grid-cols-2 gap-8">
               {PLANS.map((plan, i) => (
-                <motion.div
+                <div
                   key={plan.id}
+                  ref={(el) => {
+                    planRefs.current[i] = el;
+                  }}
                   className={`relative rounded-2xl p-8 floating-card ${plan.highlight
                     ? 'border-2 border-brand-500/50 bg-gradient-to-br from-brand-500/10 to-brand-900/20'
                     : 'glass-card'}`}
-                  initial={{ opacity: 0, y: 40 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.15, duration: 0.6 }}
                 >
                   {plan.highlight && (
                     <div className="absolute -top-4 left-1/2 -translate-x-1/2">
@@ -481,13 +500,13 @@ export default function Home() {
                   </ul>
                   <MagneticButton strength={0.2} className="w-full">
                     <Link
-                      href={`/register?plan=${plan.id}`}
+                      href={isAuthenticated ? `/dashboard/subscribe?plan=${plan.id}` : `/register?plan=${plan.id}`}
                       className={`block text-center py-3 rounded-xl font-semibold transition-all duration-300 relative z-10 ${plan.highlight ? 'btn-primary' : 'btn-secondary'}`}
                     >
                       {plan.cta}
                     </Link>
                   </MagneticButton>
-                </motion.div>
+                </div>
               ))}
             </div>
             <p className="text-center text-dark-500 text-sm mt-8">
@@ -510,17 +529,10 @@ export default function Home() {
               <div className="absolute inset-0 opacity-10"
                 style={{ background: 'radial-gradient(circle at center, #00c6ff 0%, transparent 70%)' }} />
               <div className="relative z-10">
-                <motion.div
-                  className="text-5xl mb-6"
-                  animate={{ y: [0, -8, 0], rotate: [0, 5, -5, 0] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                >
-                  <IconGolf className="text-brand-400" size={48} />
-                </motion.div>
                 <h2 className="section-heading text-4xl md:text-5xl mb-4">Ready to play?</h2>
                 <p className="text-dark-300 mb-8">Join thousands of golfers making a difference. Your subscription, your scores, your chance to win.</p>
                 <MagneticButton strength={0.35}>
-                  <Link href="/register" className="btn-gold text-base px-10 py-4 inline-block relative z-10">
+                  <Link href={isAuthenticated ? '/dashboard/subscribe?plan=monthly' : '/register?plan=monthly'} className="btn-gold text-base px-10 py-4 inline-block relative z-10">
                     Join Now — From ₹999/month
                   </Link>
                 </MagneticButton>
@@ -529,23 +541,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════
-            FOOTER
-            ═══════════════════════════════════════════ */}
-        <footer className="py-12 px-6 border-t border-white/5">
-          <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <IconGolf className="text-brand-400" size={20} />
-              <span className="font-display tracking-widest text-white">GOLFPOOLS</span>
-            </div>
-            <div className="flex items-center gap-6 text-dark-500 text-sm">
-              <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
-              <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
-              <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
-            </div>
-            <p className="text-dark-600 text-sm">© 2024 GolfPools Platform. All rights reserved.</p>
-          </div>
-        </footer>
       </div>
     </>
   );

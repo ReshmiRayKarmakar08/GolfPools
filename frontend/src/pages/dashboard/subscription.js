@@ -34,7 +34,7 @@ export default function SubscriptionPage() {
 
   if (isLoading) {
     return (
-      <DashboardLayout title="Subscription">
+      <DashboardLayout title="Subscription" legalFooterMaxWidth="max-w-2xl">
         <div className="max-w-2xl mx-auto space-y-4">
           {[1, 2].map((i) => (
             <div key={i} className="glass-card h-32 shimmer" />
@@ -46,7 +46,7 @@ export default function SubscriptionPage() {
 
   if (!sub) {
     return (
-      <DashboardLayout title="Subscription">
+      <DashboardLayout title="Subscription" legalFooterMaxWidth="max-w-2xl">
         <div className="max-w-lg mx-auto text-center glass-card p-12">
           <div className="text-5xl mb-4">■</div>
           <h2 className="text-white font-bold text-xl mb-2">No Active Subscription</h2>
@@ -62,7 +62,7 @@ export default function SubscriptionPage() {
   }
 
   return (
-    <DashboardLayout title="Subscription">
+    <DashboardLayout title="Subscription" legalFooterMaxWidth="max-w-2xl">
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Active subscription card */}
         <motion.div
@@ -172,6 +172,21 @@ export default function SubscriptionPage() {
         </motion.div>
 
         {/* Cancel / manage */}
+        {sub.status === 'pending' && (
+          <div className="glass-card p-6">
+            <h3 className="text-white font-semibold mb-2">Complete Your Payment</h3>
+            <p className="text-dark-400 text-sm mb-4">
+              Your subscription is created but payment is still pending. Continue to checkout to activate your plan.
+            </p>
+            <Link
+              href={`/dashboard/subscribe?plan=${sub.plan_type || 'monthly'}&charity=${sub.charity_id || ''}`}
+              className="btn-primary px-6 py-2.5 text-sm"
+            >
+              Complete Payment →
+            </Link>
+          </div>
+        )}
+
         {sub.status === 'active' && !sub.cancel_at_period_end && (
           <div className="glass-card p-6">
             <h3 className="text-white font-semibold mb-2">Manage Subscription</h3>
