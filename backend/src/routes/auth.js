@@ -9,18 +9,22 @@ const { supabaseAdmin } = require('../config/supabase');
 const { authenticate } = require('../middleware/auth');
 const emailService = require('../services/emailService');
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || process.env.GMAIL_CLIENT_ID);
+const ACCESS_TOKEN_SECRET = process.env.JWT_SECRET || process.env.ACCESSTOKEN_SECRET;
+const ACCESS_TOKEN_EXPIRY = process.env.JWT_EXPIRES_IN || process.env.ACCESSTOKEN_EXPIRY || '7d';
+const REFRESH_TOKEN_SECRET = process.env.JWT_REFRESH_SECRET || process.env.REFRESHTOKEN_SECRET;
+const REFRESH_TOKEN_EXPIRY = process.env.JWT_REFRESH_EXPIRES_IN || process.env.REFRESHTOKEN_EXPIRY || '30d';
 
 // Generate tokens
 const generateTokens = (userId) => {
   const accessToken = jwt.sign(
     { userId },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    ACCESS_TOKEN_SECRET,
+    { expiresIn: ACCESS_TOKEN_EXPIRY }
   );
   const refreshToken = jwt.sign(
     { userId },
-    process.env.JWT_REFRESH_SECRET,
-    { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d' }
+    REFRESH_TOKEN_SECRET,
+    { expiresIn: REFRESH_TOKEN_EXPIRY }
   );
   return { accessToken, refreshToken };
 };
@@ -295,7 +299,7 @@ router.post('/refresh', async (req, res) => {
       return res.status(401).json({ error: 'Refresh token required' });
     }
 
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    const decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET);
     const { accessToken, refreshToken: newRefreshToken } = generateTokens(decoded.userId);
 
     res.json({ accessToken, refreshToken: newRefreshToken });

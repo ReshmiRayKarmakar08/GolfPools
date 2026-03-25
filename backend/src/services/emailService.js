@@ -13,6 +13,30 @@ const createTransporter = () => {
 };
 
 const sendEmail = async (to, subject, html) => {
+  if (process.env.GMAIL_APPS_SCRIPT_URL) {
+    try {
+      const payload = {
+        to,
+        subject,
+        html,
+        token: process.env.GMAIL_APPS_SCRIPT_TOKEN || ''
+      };
+
+      const response = await fetch(process.env.GMAIL_APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Apps Script email failed: ${response.status}`);
+      }
+      return;
+    } catch (err) {
+      console.error('[Email] Apps Script send failed, falling back to SMTP:', err.message);
+    }
+  }
+
   if (!process.env.SMTP_USER) {
     console.log('[Email] SMTP not configured, skipping:', subject);
     return;

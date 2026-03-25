@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { supabaseAdmin } = require('../config/supabase');
+const ACCESS_TOKEN_SECRET = process.env.JWT_SECRET || process.env.ACCESSTOKEN_SECRET;
 
 const authenticate = async (req, res, next) => {
   try {
@@ -9,7 +10,7 @@ const authenticate = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET);
 
     const { data: user, error } = await supabaseAdmin
       .from('users')
