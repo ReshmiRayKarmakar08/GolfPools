@@ -1,1 +1,6 @@
-{"/_app":"pages/_app.js","/_error":"pages/_error.js","/admin/analytics":"pages/admin/analytics.html","/admin/charities":"pages/admin/charities.html","/admin":"pages/admin.html","/admin/draws":"pages/admin/draws.html","/admin/winners":"pages/admin/winners.html","/dashboard":"pages/dashboard.html","/dashboard/charity":"pages/dashboard/charity.html","/dashboard/draws":"pages/dashboard/draws.html","/dashboard/scores":"pages/dashboard/scores.html","/dashboard/profile":"pages/dashboard/profile.html","/admin/users":"pages/admin/users.html","/dashboard/subscribe":"pages/dashboard/subscribe.html","/dashboard/subscription":"pages/dashboard/subscription.html","/dashboard/winnings":"pages/dashboard/winnings.html","/login":"pages/login.html","/":"pages/index.html","/register":"pages/register.html","/_document":"pages/_document.js","/404":"pages/404.html"}
+{
+  "/_app": "pages/_app.js",
+  "/_error": "pages/_error.js",
+  "/_document": "pages/_document.js",
+  "/": "pages/index.js"
+}

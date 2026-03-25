@@ -294,4 +294,57 @@ router.post('/logout', authenticate, (req, res) => {
   res.json({ message: 'Logged out successfully' });
 });
 
+// POST /api/auth/google - Google OAuth (dummy for local dev)
+router.post('/google', async (req, res) => {
+  try {
+    const { email, first_name, last_name, google_id } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Check if user exists
+    let { data: user } = await supabaseAdmin
+      .from('users')
+      .select('id, email, first_name, last_name, role, is_active')
+      .eq('email', email)
+      .single();
+
+    if (!user) {
+      // Create new user from Google data
+      const { data: newUser, error } = await supabaseAdmin
+        .from('users')
+        .insert({
+          email,
+          password_hash: await bcrypt.hash(`google_${Date.now()}`, 12),
+          first_name: first_name || email.split('@')[0],
+          last_name: last_name || '',
+          email_verified: true
+        })
+        .select('id, email, first_name, last_name, role')
+        .single();
+
+      if (error) throw error;
+      user = newUser;
+    }
+
+    const { accessToken, refreshToken } = generateTokens(user.id);
+
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        role: user.role
+      },
+      accessToken,
+      refreshToken
+    });
+  } catch (err) {
+    console.error('Google auth error:', err);
+    res.status(500).json({ error: 'Google authentication failed' });
+  }
+});
+
 module.exports = router;

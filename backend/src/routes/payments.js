@@ -1,16 +1,21 @@
 const express = require('express');
 const router = express.Router();
-const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
 const { supabaseAdmin } = require('../config/supabase');
 const { authenticate } = require('../middleware/auth');
 const emailService = require('../services/emailService');
 
-const getRazorpay = () => new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET
-});
+const IS_SANDBOX = process.env.PAYMENT_SANDBOX === 'true';
+
+const getRazorpay = () => {
+  if (IS_SANDBOX) return null;
+  const Razorpay = require('razorpay');
+  return new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET
+  });
+};
 
 // Plan prices in paise (INR)
 const PLANS = {
@@ -53,19 +58,27 @@ router.post('/create-order', [
     }
 
     const plan = PLANS[plan_type];
-    const razorpay = getRazorpay();
+    let orderId;
 
-    const order = await razorpay.orders.create({
-      amount: plan.price,
-      currency: 'INR',
-      receipt: `sub_${req.user.id.slice(0, 8)}_${Date.now()}`,
-      notes: {
-        user_id: req.user.id,
-        plan_type,
-        charity_id,
-        charity_percentage
-      }
-    });
+    if (IS_SANDBOX) {
+      // SANDBOX: Generate a dummy order ID
+      orderId = `order_sandbox_${Date.now()}`;
+      console.log(`[SANDBOX] Created dummy order: ${orderId} for ₹${plan.price / 100}`);
+    } else {
+      const razorpay = getRazorpay();
+      const order = await razorpay.orders.create({
+        amount: plan.price,
+        currency: 'INR',
+        receipt: `sub_${req.user.id.slice(0, 8)}_${Date.now()}`,
+        notes: {
+          user_id: req.user.id,
+          plan_type,
+          charity_id,
+          charity_percentage
+        }
+      });
+      orderId = order.id;
+    }
 
     // Create pending subscription
     const periodStart = new Date();
@@ -92,11 +105,12 @@ router.post('/create-order', [
       .single();
 
     res.json({
-      order_id: order.id,
-      amount: order.amount,
-      currency: order.currency,
+      order_id: orderId,
+      amount: plan.price,
+      currency: 'INR',
       key: process.env.RAZORPAY_KEY_ID,
-      subscription_id: subscription.id
+      subscription_id: subscription.id,
+      sandbox: IS_SANDBOX
     });
   } catch (err) {
     console.error('Create order error:', err);
@@ -107,9 +121,6 @@ router.post('/create-order', [
 // POST /api/payments/verify - Verify Razorpay payment
 router.post('/verify', [
   authenticate,
-  body('razorpay_order_id').notEmpty(),
-  body('razorpay_payment_id').notEmpty(),
-  body('razorpay_signature').notEmpty(),
   body('subscription_id').isUUID()
 ], async (req, res) => {
   try {
@@ -120,14 +131,18 @@ router.post('/verify', [
 
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, subscription_id } = req.body;
 
-    // Verify signature
-    const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-      .digest('hex');
+    if (!IS_SANDBOX) {
+      // PRODUCTION: Verify Razorpay signature
+      const expectedSignature = crypto
+        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+        .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+        .digest('hex');
 
-    if (expectedSignature !== razorpay_signature) {
-      return res.status(400).json({ error: 'Invalid payment signature' });
+      if (expectedSignature !== razorpay_signature) {
+        return res.status(400).json({ error: 'Invalid payment signature' });
+      }
+    } else {
+      console.log(`[SANDBOX] Auto-verifying payment for subscription: ${subscription_id}`);
     }
 
     // Get subscription
@@ -271,5 +286,76 @@ router.post('/cancel-subscription', authenticate, async (req, res) => {
     res.status(500).json({ error: 'Failed to cancel subscription' });
   }
 });
+
+// POST /api/payments/sandbox-activate - SANDBOX ONLY: Directly activate subscription
+if (IS_SANDBOX) {
+  router.post('/sandbox-activate', [
+    authenticate,
+    body('plan_type').isIn(['monthly', 'yearly']),
+    body('charity_id').isUUID(),
+    body('charity_percentage').optional().isFloat({ min: 10, max: 50 })
+  ], async (req, res) => {
+    try {
+      const { plan_type, charity_id, charity_percentage = 10 } = req.body;
+      const plan = PLANS[plan_type];
+
+      const periodStart = new Date();
+      const periodEnd = new Date();
+      if (plan_type === 'monthly') {
+        periodEnd.setMonth(periodEnd.getMonth() + 1);
+      } else {
+        periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+      }
+
+      // Create and immediately activate subscription
+      const { data: subscription, error } = await supabaseAdmin
+        .from('subscriptions')
+        .insert({
+          user_id: req.user.id,
+          plan_type,
+          status: 'active',
+          charity_id,
+          charity_percentage,
+          amount: plan.price / 100,
+          current_period_start: periodStart.toISOString(),
+          current_period_end: periodEnd.toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Create payment record
+      await supabaseAdmin.from('payments').insert({
+        user_id: req.user.id,
+        subscription_id: subscription.id,
+        razorpay_payment_id: `sandbox_pay_${Date.now()}`,
+        razorpay_order_id: `sandbox_order_${Date.now()}`,
+        amount: plan.price / 100,
+        currency: 'INR',
+        status: 'captured',
+        charity_id,
+        charity_amount: (plan.price / 100) * (charity_percentage / 100),
+        platform_amount: (plan.price / 100) * DISTRIBUTION.platform,
+        prize_pool_amount: (plan.price / 100) * (1 - charity_percentage / 100 - DISTRIBUTION.platform)
+      });
+
+      console.log(`[SANDBOX] Auto-activated ${plan_type} subscription for user ${req.user.id}`);
+
+      res.json({
+        message: 'Sandbox subscription activated',
+        subscription: {
+          id: subscription.id,
+          plan_type: subscription.plan_type,
+          status: 'active',
+          current_period_end: subscription.current_period_end
+        }
+      });
+    } catch (err) {
+      console.error('Sandbox activate error:', err);
+      res.status(500).json({ error: 'Failed to activate sandbox subscription' });
+    }
+  });
+}
 
 module.exports = router;

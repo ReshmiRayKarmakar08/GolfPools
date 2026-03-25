@@ -1,11 +1,17 @@
 const cron = require('node-cron');
-const { supabaseAdmin } = require('../config/supabase');
+const { supabaseAdmin, isConfigured } = require('../config/supabase');
+
+if (!isConfigured) {
+  console.log('[CRON] Supabase not configured — cron jobs disabled');
+  module.exports = {};
+  return;
+}
+
 const drawService = require('./drawService');
 
-console.log('⏰ Cron jobs initialized');
+console.log('[CRON] Cron jobs initialized');
 
 // Monthly draw - runs on the last day of each month at 8 PM
-// '0 20 28-31 * *' - Check if it's the last day of the month
 cron.schedule('0 20 28-31 * *', async () => {
   const today = new Date();
   const tomorrow = new Date(today);
@@ -20,7 +26,6 @@ cron.schedule('0 20 28-31 * *', async () => {
     const month = today.getMonth() + 1;
     const year = today.getFullYear();
 
-    // Check if draw already exists
     const { data: existingDraw } = await supabaseAdmin
       .from('monthly_draws')
       .select('id, status')
@@ -36,7 +41,6 @@ cron.schedule('0 20 28-31 * *', async () => {
     let drawId;
 
     if (!existingDraw) {
-      // Create draw
       const winning_numbers = drawService.generateWinningNumbers('random');
       const prizePool = await drawService.calculateMonthlyPrizePool(month, year);
       const jackpotRollover = await drawService.getJackpotRollover(month - 1, year);
@@ -63,7 +67,6 @@ cron.schedule('0 20 28-31 * *', async () => {
       drawId = existingDraw.id;
     }
 
-    // Execute draw
     await drawService.executeDraw(drawId, null);
     console.log(`[CRON] Draw executed successfully for ${month}/${year}`);
   } catch (err) {
