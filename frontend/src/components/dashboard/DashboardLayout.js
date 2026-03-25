@@ -35,22 +35,35 @@ const pageVariants = {
 
 export default function DashboardLayout({ children, title }) {
   const router = useRouter();
-  const { user, logout, isAuthenticated } = useAuthStore();
+  const { user, logout, isAuthenticated, isLoading } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isAdmin = router.pathname.startsWith('/admin');
   const nav = isAdmin ? ADMIN_NAV : USER_NAV;
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       router.push('/login');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isLoading, router]);
+
+
 
   useEffect(() => {
     if (isAdmin && user?.role !== 'admin') {
       router.push('/dashboard');
     }
   }, [isAdmin, user, router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex text-white items-center justify-center bg-dark-950">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <IconGolf className="text-brand-400 animate-bounce" size={48} />
+          <p className="text-dark-400 font-display tracking-widest text-sm">VERIFYING SESSION</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleLogout = () => {
     logout();
@@ -193,17 +206,9 @@ export default function DashboardLayout({ children, title }) {
             </div>
           </header>
 
-          {/* Page content with transition */}
+          {/* Page content */}
           <div className="p-6">
-            <motion.div
-              key={router.pathname}
-              initial="initial"
-              animate="enter"
-              exit="exit"
-              variants={pageVariants}
-            >
-              {children}
-            </motion.div>
+            {children}
           </div>
         </main>
       </div>
