@@ -1,7 +1,8 @@
 <div align="center">
   <img src="./logo.svg" alt="GolfPools Logo" width="64" />
 
-  # ⛳ GolfPools — Charity Subscription Platform
+  #  <img src="./logo.svg" alt="GolfPools Logo" width="64" />
+ GolfPools — Charity Subscription Platform
 
   *A high-end, glassmorphic full-stack platform where golfers enter their Stableford scores, participate in monthly prize draws, and donate directly to their chosen charity.*
 
