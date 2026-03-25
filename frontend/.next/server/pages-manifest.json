@@ -2,5 +2,11 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/": "pages/index.js"
+  "/login": "pages/login.js",
+  "/dashboard": "pages/dashboard.js",
+  "/dashboard/scores": "pages/dashboard/scores.js",
+  "/dashboard/draws": "pages/dashboard/draws.js",
+  "/dashboard/charity": "pages/dashboard/charity.js",
+  "/dashboard/winnings": "pages/dashboard/winnings.js",
+  "/dashboard/profile": "pages/dashboard/profile.js"
 }

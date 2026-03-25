@@ -209,6 +209,7 @@ router.get('/me', authenticate, async (req, res) => {
 
     res.json({ user: { ...user, subscription } });
   } catch (err) {
+    console.error('Auth/Me error:', err);
     res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
