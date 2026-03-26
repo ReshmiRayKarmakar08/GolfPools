@@ -11,15 +11,19 @@ export default function GoogleSignInButton({ onCredential, disabled = false }) {
 
     const renderButton = () => {
       if (!window.google?.accounts?.id || !containerRef.current) return;
-
-      window.google.accounts.id.initialize({
-        client_id: clientId,
-        callback: (response) => {
-          if (response?.credential) {
-            onCredential(response.credential);
+      const gsiState = window.__golfpoolsGsiState || {};
+      const alreadyInitialized = gsiState.initialized === true && gsiState.clientId === clientId;
+      if (!alreadyInitialized) {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: (response) => {
+            if (response?.credential) {
+              onCredential(response.credential);
+            }
           }
-        }
-      });
+        });
+        window.__golfpoolsGsiState = { initialized: true, clientId };
+      }
 
       containerRef.current.innerHTML = '';
       window.google.accounts.id.renderButton(containerRef.current, {
@@ -33,7 +37,11 @@ export default function GoogleSignInButton({ onCredential, disabled = false }) {
 
     if (window.google?.accounts?.id) {
       renderButton();
-      return;
+      return () => {
+        if (window.google?.accounts?.id?.cancel) {
+          window.google.accounts.id.cancel();
+        }
+      };
     }
 
     const existing = document.querySelector(`script[src="${GOOGLE_SCRIPT_SRC}"]`);
@@ -51,6 +59,9 @@ export default function GoogleSignInButton({ onCredential, disabled = false }) {
 
     return () => {
       script.onload = null;
+      if (window.google?.accounts?.id?.cancel) {
+        window.google.accounts.id.cancel();
+      }
     };
   }, [clientId, onCredential, disabled]);
 
