@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from 'react-query';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
-import { usersAPI, winnersAPI } from '../../utils/api';
+import { authAPI, usersAPI, winnersAPI } from '../../utils/api';
 import useAuthStore from '../../context/authStore';
 
 export default function ProfilePage() {
@@ -14,7 +14,10 @@ export default function ProfilePage() {
   const [dragOverId, setDragOverId] = useState(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingKyc, setUploadingKyc] = useState(false);
-  const [kycFile, setKycFile] = useState(null);
+  const [forgotOtpSent, setForgotOtpSent] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotOtp, setForgotOtp] = useState('');
+  const [forgotNewPassword, setForgotNewPassword] = useState('');
 
   const { register, handleSubmit, reset } = useForm();
   const { register: regPwd, handleSubmit: handlePwd, reset: resetPwd, formState: { errors: pwdErrors } } = useForm();
@@ -77,6 +80,13 @@ export default function ProfilePage() {
     }
   );
 
+  const setWinnerFile = (winnerId, file) => {
+    setFilesByWinner((prev) => ({
+      ...prev,
+      [winnerId]: file || null
+    }));
+  };
+
   const handleAvatarUpload = async (file) => {
     if (!file) return;
     try {
@@ -106,6 +116,46 @@ export default function ProfilePage() {
       toast.error(err.response?.data?.error || 'Failed to upload document');
     } finally {
       setUploadingKyc(false);
+    }
+  };
+
+  const sendForgotPasswordOtp = async () => {
+    try {
+      setForgotLoading(true);
+      await authAPI.forgotPassword(user?.email);
+      setForgotOtpSent(true);
+      toast.success('OTP sent to your registered email.');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to send OTP');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const verifyForgotPasswordOtp = async () => {
+    try {
+      if (!forgotOtp || forgotOtp.length !== 6) {
+        toast.error('Enter valid 6-digit OTP');
+        return;
+      }
+      if (!forgotNewPassword || forgotNewPassword.length < 8) {
+        toast.error('New password must be at least 8 characters');
+        return;
+      }
+      setForgotLoading(true);
+      await authAPI.verifyPasswordOtp({
+        email: user?.email,
+        otp: forgotOtp,
+        password: forgotNewPassword
+      });
+      setForgotOtp('');
+      setForgotNewPassword('');
+      setForgotOtpSent(false);
+      toast.success('Password updated successfully.');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'OTP verification failed');
+    } finally {
+      setForgotLoading(false);
     }
   };
 
@@ -223,6 +273,46 @@ export default function ProfilePage() {
               {passwordMutation.isLoading ? 'Changing…' : 'Change Password'}
             </button>
           </form>
+          <div className="mt-5 pt-5 border-t border-white/10">
+            <p className="text-dark-300 text-sm mb-3">
+              Forgot old password? Reset using OTP on your registered email.
+            </p>
+            {!forgotOtpSent ? (
+              <button
+                type="button"
+                onClick={sendForgotPasswordOtp}
+                disabled={forgotLoading}
+                className="btn-primary w-full py-3 disabled:opacity-50"
+              >
+                {forgotLoading ? 'Sending OTP…' : 'Send OTP'}
+              </button>
+            ) : (
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={forgotOtp}
+                  onChange={(e) => setForgotOtp(e.target.value.trim())}
+                  placeholder="Enter 6-digit OTP"
+                  className="input-field"
+                />
+                <input
+                  type="password"
+                  value={forgotNewPassword}
+                  onChange={(e) => setForgotNewPassword(e.target.value)}
+                  placeholder="Enter new password (min 8 characters)"
+                  className="input-field"
+                />
+                <button
+                  type="button"
+                  onClick={verifyForgotPasswordOtp}
+                  disabled={forgotLoading}
+                  className="btn-primary w-full py-3 disabled:opacity-50"
+                >
+                  {forgotLoading ? 'Verifying…' : 'Verify OTP & Update Password'}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="glass-card overflow-hidden">

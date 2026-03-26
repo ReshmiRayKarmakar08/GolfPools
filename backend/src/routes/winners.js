@@ -1,7 +1,13 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
 const { supabaseAdmin } = require('../config/supabase');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024 }
+});
 
 // GET /api/winners/my - Get current user's winnings
 router.get('/my', authenticate, async (req, res) => {
@@ -16,19 +22,39 @@ router.get('/my', authenticate, async (req, res) => {
       .eq('user_id', req.user.id)
       .order('created_at', { ascending: false });
 
-    res.json({ winners });
+    res.json({ winners, winnings: winners });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch winnings' });
   }
 });
 
 // POST /api/winners/:id/upload-proof - Upload proof
-router.post('/:id/upload-proof', authenticate, async (req, res) => {
+router.post('/:id/upload-proof', authenticate, upload.single('proof'), async (req, res) => {
   try {
-    const { proof_url } = req.body;
+    let proofUrl = req.body?.proof_url;
 
-    if (!proof_url) {
-      return res.status(400).json({ error: 'Proof URL is required' });
+    if (!proofUrl && req.file) {
+      const fileName = `winner-proof/${req.user.id}_${Date.now()}_${req.file.originalname}`;
+      const { error: uploadError } = await supabaseAdmin.storage
+        .from('public')
+        .upload(fileName, req.file.buffer, {
+          contentType: req.file.mimetype,
+          upsert: true
+        });
+
+      if (uploadError) {
+        console.error('Winner proof upload error:', uploadError);
+        return res.status(500).json({ error: 'Failed to upload proof file' });
+      }
+
+      const { data: urlData } = supabaseAdmin.storage
+        .from('public')
+        .getPublicUrl(fileName);
+      proofUrl = urlData.publicUrl;
+    }
+
+    if (!proofUrl) {
+      return res.status(400).json({ error: 'Proof file or URL is required' });
     }
 
     const { data: winner } = await supabaseAdmin
@@ -43,7 +69,7 @@ router.post('/:id/upload-proof', authenticate, async (req, res) => {
     }
 
     const updatePayload = {
-      proof_url,
+      proof_url: proofUrl,
       proof_uploaded_at: new Date().toISOString(),
       payment_status: 'verified'
     };
