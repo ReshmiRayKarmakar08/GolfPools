@@ -80,6 +80,16 @@ const sendWelcomeEmail = async (email, firstName, verificationToken) => {
   `));
 };
 
+const sendAccountGreetingEmail = async (email, firstName) => {
+  await sendEmail(email, 'Welcome to GolfPools', withEmailLayout('Welcome', `
+    <p>Hello ${firstName || 'Member'},</p>
+    <p>Your GolfPools account is now active.</p>
+    <p>Thank you for joining. You can now access your dashboard, subscriptions, draw entries, and charity tracking.</p>
+    <a href="${process.env.FRONTEND_URL}/dashboard" style="display: inline-block; background: #19d3ff; color: #001018; padding: 12px 22px; text-decoration: none; border-radius: 8px; margin: 8px 0 16px;">Go to Dashboard</a>
+    <p style="font-size: 14px; color: #667085;">If this was not you, contact support immediately.</p>
+  `));
+};
+
 const sendPasswordResetEmail = async (email, firstName, resetToken) => {
   const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
   await sendEmail(email, 'Password Reset Request', withEmailLayout('Reset Password', `
@@ -162,6 +172,7 @@ const sendDrawResultAnnouncement = async (email, firstName, month, year, isWinne
 
 module.exports = {
   sendWelcomeEmail,
+  sendAccountGreetingEmail,
   sendPasswordResetEmail,
   sendPasswordOtpEmail,
   sendWinnerNotification,
