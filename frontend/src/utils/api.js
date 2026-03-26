@@ -144,6 +144,7 @@ export const adminAPI = {
   getDashboard: () => api.get('/admin/dashboard'),
   getUsers: (params) => api.get('/admin/users', { params }),
   updateUser: (id, data) => api.patch(`/admin/users/${id}`, data),
+  deleteUser: (id) => api.delete(`/admin/users/${id}`),
   getAnalytics: (params) => api.get('/admin/analytics', { params }),
   getSubscriptions: () => api.get('/admin/subscriptions'),
 };

@@ -89,6 +89,55 @@ router.patch('/users/:id', async (req, res) => {
   }
 });
 
+// DELETE /api/admin/users/:id - Permanently delete user and related records
+router.delete('/users/:id', async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    const { data: targetUser, error: targetUserError } = await supabaseAdmin
+      .from('users')
+      .select('id, role')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (targetUserError) throw targetUserError;
+    if (!targetUser) return res.status(404).json({ error: 'User not found' });
+
+    // Never allow deleting admins from this action.
+    if (targetUser.role === 'admin') {
+      return res.status(403).json({ error: 'Admin users cannot be deleted' });
+    }
+
+    // Remove dependent records first (best-effort for non-critical tables).
+    const hardDelete = async (table, column = 'user_id') => {
+      const { error } = await supabaseAdmin
+        .from(table)
+        .delete()
+        .eq(column, userId);
+      if (error) throw error;
+    };
+
+    await hardDelete('notifications').catch(() => {});
+    await hardDelete('winners').catch(() => {});
+    await hardDelete('draw_entries').catch(() => {});
+    await hardDelete('scores').catch(() => {});
+    await hardDelete('payments').catch(() => {});
+    await hardDelete('subscriptions').catch(() => {});
+
+    const { error: deleteUserError } = await supabaseAdmin
+      .from('users')
+      .delete()
+      .eq('id', userId);
+
+    if (deleteUserError) throw deleteUserError;
+
+    return res.json({ message: 'User deleted permanently' });
+  } catch (err) {
+    console.error('Admin delete user error:', err);
+    return res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
+
 // GET /api/admin/analytics - Revenue & subscription analytics
 router.get('/analytics', async (req, res) => {
   try {

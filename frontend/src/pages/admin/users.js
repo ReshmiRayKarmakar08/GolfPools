@@ -21,6 +21,10 @@ export default function AdminUsersPage() {
     onSuccess: () => { qc.invalidateQueries('adminUsers'); toast.success('User updated'); },
     onError: () => toast.error('Failed to update user')
   });
+  const deleteMutation = useMutation((id) => adminAPI.deleteUser(id), {
+    onSuccess: () => { qc.invalidateQueries('adminUsers'); toast.success('User deleted permanently'); },
+    onError: (err) => toast.error(err?.response?.data?.error || 'Failed to delete user')
+  });
 
   const users = data?.users || [];
   const total = data?.total || 0;
@@ -116,7 +120,7 @@ export default function AdminUsersPage() {
                               <button
                                 onClick={() => {
                                   if (confirm(`Delete ${user.first_name || 'this user'} permanently?`)) {
-                                    updateMutation.mutate({ id: user.id, data: { is_active: false } });
+                                    deleteMutation.mutate(user.id);
                                   }
                                 }}
                                 className="text-xs border border-red-500/30 text-red-400 px-3 py-1.5 rounded-lg hover:bg-red-500/10 transition-colors"
