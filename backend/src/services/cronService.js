@@ -1,4 +1,5 @@
 const cron = require('node-cron');
+const https = require('https');
 const { supabaseAdmin, isConfigured } = require('../config/supabase');
 
 if (!isConfigured) {
@@ -106,6 +107,18 @@ cron.schedule('0 2 * * *', async () => {
   } catch (err) {
     console.error('[CRON] Subscription check failed:', err);
   }
+});
+
+// Keep-Alive Ping - runs every 14 minutes to prevent Render sleep
+cron.schedule('*/14 * * * *', () => {
+  const url = process.env.BACKEND_URL || 'https://golfpools.onrender.com';
+  console.log(`[CRON] Pinging ${url}/health to keep server awake...`);
+  
+  https.get(`${url}/health`, (res) => {
+    console.log(`[CRON] Ping response: ${res.statusCode}`);
+  }).on('error', (err) => {
+    console.error('[CRON] Ping failed:', err.message);
+  });
 });
 
 module.exports = {};
