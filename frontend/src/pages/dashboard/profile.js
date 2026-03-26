@@ -246,6 +246,7 @@ export default function ProfilePage() {
                 {...regPwd('current_password', { required: 'Required' })}
                 type="password"
                 className="input-field"
+                autoComplete="current-password"
               />
               {pwdErrors.current_password && (
                 <p className="text-red-400 text-xs mt-1">{pwdErrors.current_password.message}</p>
@@ -261,6 +262,7 @@ export default function ProfilePage() {
                 type="password"
                 className="input-field"
                 placeholder="Min 8 characters"
+                autoComplete="new-password"
               />
               {pwdErrors.new_password && (
                 <p className="text-red-400 text-xs mt-1">{pwdErrors.new_password.message}</p>
@@ -302,6 +304,7 @@ export default function ProfilePage() {
                   onChange={(e) => setForgotNewPassword(e.target.value)}
                   placeholder="Enter new password (min 8 characters)"
                   className="input-field"
+                  autoComplete="new-password"
                 />
                 <button
                   type="button"
