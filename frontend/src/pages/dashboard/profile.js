@@ -12,6 +12,9 @@ export default function ProfilePage() {
   const qc = useQueryClient();
   const [filesByWinner, setFilesByWinner] = useState({});
   const [dragOverId, setDragOverId] = useState(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingKyc, setUploadingKyc] = useState(false);
+  const [kycFile, setKycFile] = useState(null);
 
   const { register, handleSubmit, reset } = useForm();
   const { register: regPwd, handleSubmit: handlePwd, reset: resetPwd, formState: { errors: pwdErrors } } = useForm();
@@ -74,25 +77,72 @@ export default function ProfilePage() {
     }
   );
 
-  const setWinnerFile = (winnerId, file) => {
+  const handleAvatarUpload = async (file) => {
     if (!file) return;
-    setFilesByWinner((prev) => ({ ...prev, [winnerId]: file }));
+    try {
+      setUploadingAvatar(true);
+      const fd = new FormData();
+      fd.append('avatar', file);
+      const { data } = await usersAPI.updateAvatar(fd);
+      updateUser({ ...user, avatar_url: data.avatar_url });
+      toast.success('Profile picture updated!');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to upload avatar');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleKycUpload = async (file) => {
+    if (!file) return;
+    try {
+      setUploadingKyc(true);
+      const fd = new FormData();
+      fd.append('document', file);
+      await usersAPI.updateKyc(fd);
+      toast.success('Identity document uploaded successfully!');
+      qc.invalidateQueries(['profile']);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to upload document');
+    } finally {
+      setUploadingKyc(false);
+    }
   };
 
   return (
     <DashboardLayout title="Profile">
       <div className="max-w-3xl mx-auto space-y-6">
-        {/* Avatar */}
-        <div className="glass-card p-6 flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-dark-950 font-bold text-2xl">
-            {user?.first_name?.[0]}{user?.last_name?.[0]}
-          </div>
-          <div>
-            <div className="text-white font-bold text-lg">
-              {user?.first_name} {user?.last_name}
+        {/* Avatar & Basic Info */}
+        <div className="glass-card p-6 flex flex-col sm:flex-row items-center gap-6">
+          <div className="relative group">
+            <div className="w-24 h-24 rounded-3xl overflow-hidden border-2 border-white/10 group-hover:border-brand-500/50 transition-all duration-300">
+              {user?.avatar_url ? (
+                <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-dark-950 font-bold text-3xl">
+                  {user?.first_name?.[0]}{user?.last_name?.[0]}
+                </div>
+              )}
+              {uploadingAvatar && (
+                <div className="absolute inset-0 bg-dark-950/60 backdrop-blur-sm flex items-center justify-center">
+                  <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
             </div>
-            <div className="text-dark-400 text-sm">{user?.email}</div>
-            <div className="text-brand-400 text-xs mt-1 capitalize">{user?.role}</div>
+            <label className="absolute -bottom-2 -right-2 w-8 h-8 rounded-xl bg-brand-500 text-dark-950 flex items-center justify-center cursor-pointer hover:bg-brand-400 transition-colors shadow-lg">
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => handleAvatarUpload(e.target.files?.[0])} />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </label>
+          </div>
+          <div className="text-center sm:text-left">
+            <h2 className="text-white font-bold text-2xl">
+              {user?.first_name} {user?.last_name}
+            </h2>
+            <p className="text-dark-400">{user?.email}</p>
+            <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-2">
+              <span className="badge-primary px-3 py-1 text-[10px] uppercase tracking-wider">{user?.role}</span>
+              {user?.email_verified && <span className="badge-success px-3 py-1 text-[10px] uppercase tracking-wider">Verified</span>}
+            </div>
           </div>
         </div>
 
@@ -173,6 +223,55 @@ export default function ProfilePage() {
               {passwordMutation.isLoading ? 'Changing…' : 'Change Password'}
             </button>
           </form>
+        </div>
+
+        <div className="glass-card overflow-hidden">
+          <div className="border-b border-white/5 p-4 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h3 className="text-white font-bold">Identity Verification (KYC)</h3>
+          </div>
+          <div className="p-6">
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex-1 space-y-3">
+                <p className="text-dark-400 text-sm">
+                  Upload a valid government-issued ID to verify your identity. This is required for withdrawing winnings.
+                </p>
+                {user?.kyc_status && (
+                  <div className={`p-3 rounded-xl border ${
+                    user.kyc_status === 'verified' ? 'bg-green-500/10 border-green-500/20 text-green-400' :
+                    user.kyc_status === 'pending' ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400' :
+                    user.kyc_status === 'rejected' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
+                    'bg-white/5 border-white/10 text-dark-400'
+                  }`}>
+                    <div className="flex items-center gap-2 font-bold uppercase text-[10px]">
+                      Status: {user.kyc_status}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="w-full md:w-64">
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setDragOverId('gen_kyc'); }}
+                  onDragLeave={() => setDragOverId(null)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDragOverId(null);
+                    handleKycUpload(e.dataTransfer.files?.[0]);
+                  }}
+                  className={`relative rounded-2xl border-2 border-dashed transition-all p-8 flex flex-col items-center justify-center text-center gap-2 ${
+                    dragOverId === 'gen_kyc' ? 'border-brand-500 bg-brand-500/5' : 'border-white/10 bg-white/5'
+                  }`}
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-dark-400"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <p className="text-white text-xs font-bold">Upload ID Proof</p>
+                  <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleKycUpload(e.target.files?.[0])} />
+                  {uploadingKyc && <div className="absolute inset-0 bg-dark-950/80 rounded-2xl flex items-center justify-center"><div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" /></div>}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="glass-card p-6">

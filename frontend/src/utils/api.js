@@ -64,6 +64,12 @@ export const usersAPI = {
   getProfile: () => api.get('/users/profile'),
   updateProfile: (data) => api.put('/users/profile', data),
   changePassword: (data) => api.put('/users/change-password', data),
+  updateAvatar: (formData) => api.post('/users/avatar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  updateKyc: (formData) => api.post('/users/kyc', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
 };
 
 // Scores
@@ -116,7 +122,9 @@ export const charitiesAPI = {
 // Winners
 export const winnersAPI = {
   getMy: () => api.get('/winners/my'),
-  uploadProof: (id, proof_url) => api.post(`/winners/${id}/upload-proof`, { proof_url }),
+  uploadProof: (id, formData) => api.post(`/winners/${id}/upload-proof`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
   // Admin
   getAll: (params) => api.get('/winners', { params }),
   approve: (id, data) => api.patch(`/winners/${id}/approve`, data),

@@ -36,7 +36,6 @@ const USER_NAV = [
   { href: '/dashboard/winnings', label: 'Winnings', icon: <IconTrophy size={18} /> },
   { href: '/dashboard/charity', label: 'Charity', icon: <IconHeart size={18} /> },
   { href: '/dashboard/subscription', label: 'Subscription', icon: <IconCreditCard size={18} /> },
-  { href: '/dashboard/profile', label: 'Profile', icon: <IconUser size={18} /> },
 ];
 
 const ADMIN_NAV = [
@@ -248,12 +247,26 @@ export default function DashboardLayout({ children, title, legalFooterMaxWidth =
               </button>
               <h1 className="text-white font-bold text-lg">{title}</h1>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <Link
                 href="/dashboard/profile"
-                className="w-8 h-8 rounded-lg bg-dark-800 flex items-center justify-center text-dark-400 hover:text-white transition-colors"
+                className="flex items-center gap-2 group"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <div className="text-right hidden sm:block">
+                  <p className="text-white text-xs font-medium leading-none mb-1 group-hover:text-brand-400 transition-colors">
+                    {user?.first_name}
+                  </p>
+                  <p className="text-dark-500 text-[10px] leading-none">View Profile</p>
+                </div>
+                {user?.avatar_url ? (
+                  <div className="w-9 h-9 rounded-lg border border-white/10 overflow-hidden group-hover:border-brand-500/50 transition-colors">
+                    <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-dark-950 font-bold text-xs group-hover:scale-105 transition-transform">
+                    {user?.first_name?.[0]}{user?.last_name?.[0]}
+                  </div>
+                )}
               </Link>
             </div>
           </header>

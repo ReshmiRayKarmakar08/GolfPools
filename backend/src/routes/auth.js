@@ -485,6 +485,7 @@ router.post('/google', async (req, res) => {
     const email = String(payload?.email || '').toLowerCase();
     const first_name = payload?.given_name || email.split('@')[0];
     const last_name = payload?.family_name || '';
+    const avatar_url = payload?.picture || null;
 
     if (!email || payload?.email_verified !== true) {
       return res.status(400).json({ error: 'Google email is not verified' });
@@ -496,7 +497,7 @@ router.post('/google', async (req, res) => {
 
     let { data: user } = await supabaseAdmin
       .from('users')
-      .select('id, email, first_name, last_name, role, is_active')
+      .select('id, email, first_name, last_name, role, is_active, avatar_url')
       .eq('email', email)
       .maybeSingle();
 
@@ -508,15 +509,25 @@ router.post('/google', async (req, res) => {
           password_hash: await bcrypt.hash(`google_${Date.now()}_${payload.sub}`, 12),
           first_name,
           last_name,
+          avatar_url,
           role: 'user',
           email_verified: true,
           is_active: true
         })
-        .select('id, email, first_name, last_name, role')
+        .select('id, email, first_name, last_name, role, avatar_url')
         .single();
 
       if (error) throw error;
       user = { ...newUser, is_active: true };
+    } else if (avatar_url && user.avatar_url !== avatar_url) {
+      // Update avatar if it changed in Google
+      const { data: updatedUser } = await supabaseAdmin
+        .from('users')
+        .update({ avatar_url })
+        .eq('id', user.id)
+        .select('id, email, first_name, last_name, role, avatar_url')
+        .single();
+      if (updatedUser) user = { ...user, avatar_url: updatedUser.avatar_url };
     }
 
     if (!user.is_active) {

@@ -20,9 +20,8 @@ const allowedOrigins = [
   'http://localhost:3000',
   'https://golfpools-web.vercel.app',
   'https://golfpools-web.vercel.app/',
-  'https://golfpools-web.vercel.app/admin-login',
-  'https://golfpools-web.vercel.app/admin',
-  'https://golf-charity.vercel.app'
+  'https://golf-charity.vercel.app',
+  'https://golfpools.vercel.app'
 ];
 
 if (process.env.FRONTEND_URL) {

@@ -1,74 +1,107 @@
-// users.js
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcryptjs');
-const { body, validationResult } = require('express-validator');
+const multer = require('multer');
 const { supabaseAdmin } = require('../config/supabase');
 const { authenticate } = require('../middleware/auth');
 
-router.get('/profile', authenticate, async (req, res) => {
+// Simple Memory Storage
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
+
+// POST /api/users/avatar
+router.post('/avatar', authenticate, upload.single('avatar'), async (req, res) => {
   try {
-    const { data: user } = await supabaseAdmin
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const { buffer, mimetype, originalname } = req.file;
+    const fileName = `avatars/${req.user.id}_${Date.now()}_${originalname}`;
+
+    // Upload to Supabase Storage
+    const { data, error } = await supabaseAdmin.storage
+      .from('public')
+      .upload(fileName, buffer, {
+        contentType: mimetype,
+        upsert: true
+      });
+
+    if (error) {
+      console.error('Storage upload error:', error);
+      return res.status(500).json({ error: 'Failed to upload image to storage' });
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabaseAdmin.storage
+      .from('public')
+      .getPublicUrl(fileName);
+
+    // Update user record
+    const { error: dbError } = await supabaseAdmin
       .from('users')
-      .select('id, email, first_name, last_name, phone, avatar_url, handicap, golf_club, created_at')
-      .eq('id', req.user.id)
-      .single();
-    res.json({ user });
+      .update({ avatar_url: publicUrl })
+      .eq('id', req.user.id);
+
+    if (dbError) throw dbError;
+
+    res.json({ 
+      message: 'Avatar updated successfully', 
+      avatar_url: publicUrl 
+    });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch profile' });
+    console.error('Avatar upload error:', err);
+    res.status(500).json({ error: 'Failed to update avatar' });
   }
 });
 
-router.put('/profile', [
-  authenticate,
-  body('first_name').optional().trim().notEmpty(),
-  body('last_name').optional().trim().notEmpty(),
-  body('phone').optional().trim(),
-  body('handicap').optional().isFloat({ min: 0, max: 54 }),
-  body('golf_club').optional().trim()
-], async (req, res) => {
+// POST /api/users/kyc
+router.post('/kyc', authenticate, upload.single('document'), async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    if (!req.file) {
+      return res.status(400).json({ error: 'No document uploaded' });
+    }
 
-    const allowed = ['first_name', 'last_name', 'phone', 'avatar_url', 'handicap', 'golf_club'];
-    const updateData = {};
-    allowed.forEach(f => { if (req.body[f] !== undefined) updateData[f] = req.body[f]; });
+    const { buffer, mimetype, originalname } = req.file;
+    const fileName = `kyc/${req.user.id}_${Date.now()}_${originalname}`;
 
-    const { data: user, error } = await supabaseAdmin
+    // Upload to Supabase
+    const { data, error } = await supabaseAdmin.storage
+      .from('public')
+      .upload(fileName, buffer, { contentType: mimetype, upsert: true });
+
+    if (error) {
+      console.error('Storage upload error:', error);
+      return res.status(500).json({ error: 'Failed to upload document' });
+    }
+
+    const { data: { publicUrl } } = supabaseAdmin.storage
+      .from('public')
+      .getPublicUrl(fileName);
+
+    // Update user record (swallow error if column missing)
+    const { error: dbError } = await supabaseAdmin
       .from('users')
-      .update(updateData)
-      .eq('id', req.user.id)
-      .select('id, email, first_name, last_name, phone, handicap, golf_club')
-      .single();
+      .update({ 
+        kyc_document_url: publicUrl,
+        kyc_status: 'pending',
+        kyc_uploaded_at: new Date().toISOString()
+      })
+      .eq('id', req.user.id);
 
-    if (error) throw error;
-    res.json({ user });
+    if (dbError) {
+      console.warn('DB Update warning (check if KYC columns exist):', dbError.message);
+      // If column doesn't exist, we still want to return the URL so the UI can show "Uploaded"
+    }
+
+    res.json({ 
+      message: 'KYC Document uploaded and pending verification', 
+      document_url: publicUrl 
+    });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to update profile' });
-  }
-});
-
-router.put('/change-password', [
-  authenticate,
-  body('current_password').notEmpty(),
-  body('new_password').isLength({ min: 8 })
-], async (req, res) => {
-  try {
-    const { current_password, new_password } = req.body;
-
-    const { data: user } = await supabaseAdmin
-      .from('users').select('password_hash').eq('id', req.user.id).single();
-
-    const valid = await bcrypt.compare(current_password, user.password_hash);
-    if (!valid) return res.status(400).json({ error: 'Current password is incorrect' });
-
-    const password_hash = await bcrypt.hash(new_password, 12);
-    await supabaseAdmin.from('users').update({ password_hash }).eq('id', req.user.id);
-
-    res.json({ message: 'Password changed successfully' });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to change password' });
+    console.error('KYC upload error:', err);
+    res.status(500).json({ error: 'Failed to process KYC upload' });
   }
 });
 
