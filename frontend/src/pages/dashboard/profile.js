@@ -121,11 +121,12 @@ export default function ProfilePage() {
 
   const sendForgotPasswordOtp = async () => {
     try {
+      setForgotOtpSent(true);
       setForgotLoading(true);
       await authAPI.forgotPassword(user?.email);
-      setForgotOtpSent(true);
       toast.success('OTP sent to your registered email.');
     } catch (err) {
+      setForgotOtpSent(false);
       toast.error(err.response?.data?.error || 'Failed to send OTP');
     } finally {
       setForgotLoading(false);
@@ -309,6 +310,14 @@ export default function ProfilePage() {
                   className="btn-primary w-full py-3 disabled:opacity-50"
                 >
                   {forgotLoading ? 'Verifying…' : 'Verify OTP & Update Password'}
+                </button>
+                <button
+                  type="button"
+                  onClick={sendForgotPasswordOtp}
+                  disabled={forgotLoading}
+                  className="btn-secondary w-full py-3 disabled:opacity-50"
+                >
+                  {forgotLoading ? 'Sending…' : 'Resend OTP'}
                 </button>
               </div>
             )}
