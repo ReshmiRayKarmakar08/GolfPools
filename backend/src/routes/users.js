@@ -10,20 +10,54 @@ const upload = multer({
   limits: { fileSize: 25 * 1024 * 1024 } // 25MB
 });
 
+const sanitizeFileName = (name = 'file') =>
+  String(name).replace(/[^a-zA-Z0-9._-]/g, '_');
+
+const ensureBucketExists = async (bucketName) => {
+  const { data: buckets, error: listError } = await supabaseAdmin.storage.listBuckets();
+  if (listError) {
+    throw listError;
+  }
+  const exists = (buckets || []).some((b) => b.name === bucketName);
+  if (exists) return;
+
+  const { error: createError } = await supabaseAdmin.storage.createBucket(bucketName, {
+    public: true,
+    fileSizeLimit: 52428800
+  });
+  if (createError && !String(createError.message || '').toLowerCase().includes('already exists')) {
+    throw createError;
+  }
+};
+
 const uploadToPublicBucket = async (path, buffer, contentType) => {
-  const { error: uploadError } = await supabaseAdmin.storage
-    .from('public')
+  const bucketName = 'public';
+  await ensureBucketExists(bucketName);
+
+  let { error: uploadError } = await supabaseAdmin.storage
+    .from(bucketName)
     .upload(path, buffer, {
       contentType,
       upsert: true
     });
 
+  if (uploadError && String(uploadError.message || '').toLowerCase().includes('bucket')) {
+    await ensureBucketExists(bucketName);
+    const retry = await supabaseAdmin.storage
+      .from(bucketName)
+      .upload(path, buffer, {
+        contentType,
+        upsert: true
+      });
+    uploadError = retry.error;
+  }
+
   if (uploadError) {
-    throw uploadError;
+    throw new Error(`Storage upload failed: ${uploadError.message}`);
   }
 
   const { data: urlData } = supabaseAdmin.storage
-    .from('public')
+    .from(bucketName)
     .getPublicUrl(path);
 
   return urlData.publicUrl;
@@ -151,7 +185,7 @@ router.post('/avatar', authenticate, upload.single('avatar'), async (req, res) =
       return res.status(400).json({ error: 'Only image files are allowed for avatar' });
     }
 
-    const fileName = `avatars/${req.user.id}_${Date.now()}_${req.file.originalname}`;
+    const fileName = `avatars/${req.user.id}_${Date.now()}_${sanitizeFileName(req.file.originalname)}`;
     const publicUrl = await uploadToPublicBucket(fileName, req.file.buffer, req.file.mimetype);
 
     const { error: dbError } = await supabaseAdmin
@@ -184,7 +218,7 @@ router.post('/kyc', authenticate, upload.single('document'), async (req, res) =>
       return res.status(400).json({ error: 'Only image or PDF files are allowed' });
     }
 
-    const fileName = `kyc/${req.user.id}_${Date.now()}_${req.file.originalname}`;
+    const fileName = `kyc/${req.user.id}_${Date.now()}_${sanitizeFileName(req.file.originalname)}`;
     const publicUrl = await uploadToPublicBucket(fileName, req.file.buffer, req.file.mimetype);
 
     const { error: dbError } = await supabaseAdmin

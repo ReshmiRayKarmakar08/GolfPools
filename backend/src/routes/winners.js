@@ -9,6 +9,23 @@ const upload = multer({
   limits: { fileSize: 25 * 1024 * 1024 }
 });
 
+const sanitizeFileName = (name = 'file') =>
+  String(name).replace(/[^a-zA-Z0-9._-]/g, '_');
+
+const ensureBucketExists = async (bucketName) => {
+  const { data: buckets, error: listError } = await supabaseAdmin.storage.listBuckets();
+  if (listError) throw listError;
+  const exists = (buckets || []).some((b) => b.name === bucketName);
+  if (exists) return;
+  const { error: createError } = await supabaseAdmin.storage.createBucket(bucketName, {
+    public: true,
+    fileSizeLimit: 52428800
+  });
+  if (createError && !String(createError.message || '').toLowerCase().includes('already exists')) {
+    throw createError;
+  }
+};
+
 // GET /api/winners/my - Get current user's winnings
 router.get('/my', authenticate, async (req, res) => {
   try {
@@ -34,9 +51,11 @@ router.post('/:id/upload-proof', authenticate, upload.single('proof'), async (re
     let proofUrl = req.body?.proof_url;
 
     if (!proofUrl && req.file) {
-      const fileName = `winner-proof/${req.user.id}_${Date.now()}_${req.file.originalname}`;
+      const bucketName = 'public';
+      const fileName = `winner-proof/${req.user.id}_${Date.now()}_${sanitizeFileName(req.file.originalname)}`;
+      await ensureBucketExists(bucketName);
       const { error: uploadError } = await supabaseAdmin.storage
-        .from('public')
+        .from(bucketName)
         .upload(fileName, req.file.buffer, {
           contentType: req.file.mimetype,
           upsert: true
@@ -48,7 +67,7 @@ router.post('/:id/upload-proof', authenticate, upload.single('proof'), async (re
       }
 
       const { data: urlData } = supabaseAdmin.storage
-        .from('public')
+        .from(bucketName)
         .getPublicUrl(fileName);
       proofUrl = urlData.publicUrl;
     }
