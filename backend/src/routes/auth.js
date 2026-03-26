@@ -132,8 +132,9 @@ router.post('/register', [
       }
     }
 
-    // Send welcome email
+    // Send welcome + greeting email (non-blocking)
     await emailService.sendWelcomeEmail(email, first_name, verification_token).catch(console.error);
+    await emailService.sendAccountGreetingEmail(email, first_name).catch(console.error);
 
     const { accessToken, refreshToken } = generateTokens(user.id);
 
@@ -519,6 +520,9 @@ router.post('/google', async (req, res) => {
 
       if (error) throw error;
       user = { ...newUser, is_active: true };
+
+      // First-time Google account creation greeting (non-blocking)
+      await emailService.sendAccountGreetingEmail(email, first_name).catch(console.error);
     } else if (avatar_url && user.avatar_url !== avatar_url) {
       // Update avatar if it changed in Google
       const { data: updatedUser } = await supabaseAdmin
