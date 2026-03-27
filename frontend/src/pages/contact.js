@@ -30,15 +30,15 @@ export default function ContactPage() {
               </div>
               <div className="rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <p className="text-xs text-dark-500 uppercase tracking-wider mb-1">Business Email</p>
-                <p className="text-white">[contact@golfpools.com]</p>
+                <p className="text-white">contact@golfpools.com</p>
               </div>
               <div className="rounded-xl p-4 md:col-span-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <p className="text-xs text-dark-500 uppercase tracking-wider mb-1">Kolkata,westBengal</p>
-                <p className="text-white">[Complete Registered Business Address]</p>
+                <p className="text-xs text-dark-500 uppercase tracking-wider mb-1">Business Address</p>
+                <p className="text-white">Kolkata,westBengal</p>
               </div>
               <div className="rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <p className="text-xs text-dark-500 uppercase tracking-wider mb-1">Phone</p>
-                <p className="text-white">[+91-9832645693]</p>
+                <p className="text-white">+91-9832645693</p>
               </div>
             </div>
 
