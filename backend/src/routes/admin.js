@@ -108,7 +108,7 @@ router.delete('/users/:id', async (req, res) => {
       return res.status(403).json({ error: 'Admin users cannot be deleted' });
     }
 
-    // Remove dependent records first (best-effort for non-critical tables).
+    // Remove dependent records first to satisfy FK constraints.
     const hardDelete = async (table, column = 'user_id') => {
       const { error } = await supabaseAdmin
         .from(table)
@@ -117,12 +117,14 @@ router.delete('/users/:id', async (req, res) => {
       if (error) throw error;
     };
 
+    // 1) Direct user-linked tables
     await hardDelete('notifications').catch(() => {});
     await hardDelete('winners').catch(() => {});
     await hardDelete('draw_entries').catch(() => {});
-    await hardDelete('scores').catch(() => {});
     await hardDelete('payments').catch(() => {});
     await hardDelete('subscriptions').catch(() => {});
+    await hardDelete('golf_scores').catch(() => {});
+    await hardDelete('scores').catch(() => {}); // legacy table name fallback
 
     const { error: deleteUserError } = await supabaseAdmin
       .from('users')
@@ -134,7 +136,10 @@ router.delete('/users/:id', async (req, res) => {
     return res.json({ message: 'User deleted permanently' });
   } catch (err) {
     console.error('Admin delete user error:', err);
-    return res.status(500).json({ error: 'Failed to delete user' });
+    return res.status(500).json({
+      error: 'Failed to delete user',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
