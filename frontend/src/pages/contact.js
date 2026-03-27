@@ -26,24 +26,24 @@ export default function ContactPage() {
             <div className="grid md:grid-cols-2 gap-4">
               <div className="rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <p className="text-xs text-dark-500 uppercase tracking-wider mb-1">Registered Business Name</p>
-                <p className="text-white">[Your Registered Entity Name]</p>
+                <p className="text-white">GolfPools</p>
               </div>
               <div className="rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <p className="text-xs text-dark-500 uppercase tracking-wider mb-1">Business Email</p>
-                <p className="text-white">[support@yourdomain.com]</p>
+                <p className="text-white">[contact@golfpools.com]</p>
               </div>
               <div className="rounded-xl p-4 md:col-span-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <p className="text-xs text-dark-500 uppercase tracking-wider mb-1">Registered Address</p>
+                <p className="text-xs text-dark-500 uppercase tracking-wider mb-1">Kolkata,westBengal</p>
                 <p className="text-white">[Complete Registered Business Address]</p>
               </div>
               <div className="rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <p className="text-xs text-dark-500 uppercase tracking-wider mb-1">Phone</p>
-                <p className="text-white">[+91-XXXXXXXXXX]</p>
+                <p className="text-white">[+91-9832645693]</p>
               </div>
             </div>
 
             <p className="text-dark-400 text-sm mt-6">
-              Replace placeholder details with your verified business information before submitting for Razorpay review.
+              {/* Replace placeholder details with your verified business information before submitting for Razorpay review. */}
             </p>
           </motion.section>
         </div>
