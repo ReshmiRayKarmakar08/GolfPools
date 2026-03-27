@@ -12,7 +12,7 @@ const createTransporter = () => {
   });
 };
 
-const PLATFORM_NAME = 'GolfPools Platform';
+const PLATFORM_NAME = 'GolfPools';
 
 const withEmailLayout = (title, bodyHtml) => `
   <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; background: #f5f7fb; padding: 20px;">
@@ -37,6 +37,7 @@ const sendEmail = async (to, subject, html) => {
         to,
         subject,
         html,
+        fromName: PLATFORM_NAME,
         token: process.env.GMAIL_APPS_SCRIPT_TOKEN || ''
       };
 
