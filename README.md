@@ -6,22 +6,11 @@
   <br />
 
   ### 📸 Platform Previews
-  <!-- 🛑 Replace the links below with your uploaded images via GitHub Editor -->
-  <table>
-    <tr>
-      <td align="center"><b>Admin Dashboard</b></td>
-      <td align="center"><b>Player Registration</b></td>
-      <td align="center"><b>Live Draw Mechanics</b></td>
-    </tr>
-    <tr>
-      <td align="center"><br/><i>[Drag & Drop Admin Image Here]</i><br/><br/></td>
-      <td align="center"><br/><i>[Drag & Drop Register Image Here]</i><br/><br/></td>
-      <td align="center"><br/><i>[Drag & Drop Draws Image Here]</i><br/><br/></td>
-    </tr>
-  </table>
+<img width="1902" height="1035" alt="image" src="https://github.com/user-attachments/assets/d3c32fd6-698f-424f-bb32-47573160624a" />
+<img width="1919" height="1033" alt="image" src="https://github.com/user-attachments/assets/655a1c65-b743-4c46-b63e-f704801199a5" />
 
-  <br />
-</div>
+
+
 
 ---
 
