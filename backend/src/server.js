@@ -49,11 +49,25 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Rate limiting
+// =============================================
+// HEALTH CHECK — MUST be before rate limiters
+// so Render's health checker and keep-alive
+// pings NEVER receive a 429 response.
+// =============================================
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    environment: process.env.NODE_ENV,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Rate limiting (applied AFTER /health is declared)
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200,
-  message: { error: 'Too many requests, please try again later.' }
+  max: 300, // Increased headroom for legitimate traffic
+  message: { error: 'Too many requests, please try again later.' },
+  skip: (req) => req.path === '/health' // extra safety guard
 });
 app.use('/api/', globalLimiter);
 
@@ -80,14 +94,7 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/health', require('./routes/health'));
 
-// Basic health check (legacy)
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    environment: process.env.NODE_ENV,
-    timestamp: new Date().toISOString()
-  });
-});
+// NOTE: /health is now declared above the rate limiters (see line ~52)
 
 // =============================================
 // ERROR HANDLING
