@@ -109,16 +109,35 @@ cron.schedule('0 2 * * *', async () => {
   }
 });
 
-// Keep-Alive Ping - runs every 14 minutes to prevent Render sleep
-cron.schedule('*/14 * * * *', () => {
+// Keep-Alive Ping - runs every 14 minutes to prevent:
+// 1. Render free tier sleep (HTTP ping)
+// 2. Supabase free tier project pause (DB query)
+cron.schedule('*/14 * * * *', async () => {
   const url = process.env.BACKEND_URL || 'https://golfpools.onrender.com';
-  console.log(`[CRON] Pinging ${url}/health to keep server awake...`);
   
+  // 1. Ping Render to keep the server awake
   https.get(`${url}/health`, (res) => {
-    console.log(`[CRON] Ping response: ${res.statusCode}`);
+    console.log(`[CRON] Render ping: ${res.statusCode}`);
   }).on('error', (err) => {
-    console.error('[CRON] Ping failed:', err.message);
+    console.error('[CRON] Render ping failed:', err.message);
   });
+
+  // 2. Query Supabase DB to keep the project active (prevents free-tier pause)
+  try {
+    const { error } = await supabaseAdmin
+      .from('charities')
+      .select('id')
+      .limit(1);
+    
+    if (error) {
+      console.error('[CRON] Supabase keep-alive query failed:', error.message);
+    } else {
+      console.log('[CRON] Supabase keep-alive: OK');
+    }
+  } catch (err) {
+    console.error('[CRON] Supabase keep-alive error:', err.message);
+  }
 });
+
 
 module.exports = {};
