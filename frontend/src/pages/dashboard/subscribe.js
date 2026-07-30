@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -77,6 +77,7 @@ const loadRazorpay = () =>
 
 export default function SubscribePage() {
   const router = useRouter();
+  const qc = useQueryClient();
   const { user, refreshUser } = useAuthStore();
   const hostedPaymentPageBase = process.env.NEXT_PUBLIC_RAZORPAY_PAYMENT_PAGE_URL || '';
 
@@ -233,16 +234,19 @@ export default function SubscribePage() {
             qc.invalidateQueries('subscription');
             qc.invalidateQueries('paymentHistory');
             await refreshUser();
-            toast.success('Payment successful! Your subscription is active!');
-            router.push('/dashboard/subscription');
+            toast.success('Payment successful! Your subscription is active! 🎉');
+            if (typeof window !== 'undefined') {
+              window.location.href = '/dashboard/subscription';
+            }
           } catch (err) {
             console.error('Verify error:', err);
-            // Fallback: refresh queries and check if subscription was activated anyway
             qc.invalidateQueries('subscription');
             qc.invalidateQueries('paymentHistory');
             await refreshUser();
             toast.success('Payment processed! Redirecting to subscription details...');
-            router.push('/dashboard/subscription');
+            if (typeof window !== 'undefined') {
+              window.location.href = '/dashboard/subscription';
+            }
           } finally {
             setPaying(false);
           }
