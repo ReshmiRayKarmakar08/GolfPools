@@ -11,9 +11,9 @@ export default function SubscriptionPage() {
   const qc = useQueryClient();
   const [confirmCancel, setConfirmCancel] = useState(false);
 
-  const { data: sub, isLoading } = useQuery('subscription', subscriptionsAPI.getCurrent, {
-    select: (r) => r.data.subscription,
-  });
+  const { data: subRes, isLoading } = useQuery('subscription', subscriptionsAPI.getCurrent);
+  const sub = subRes?.data?.subscription;
+  const queuedSubs = subRes?.data?.queuedSubscriptions || [];
 
   const { data: payments } = useQuery('paymentHistory', paymentsAPI.getHistory, {
     select: (r) => r.data.payments,
@@ -44,17 +44,21 @@ export default function SubscriptionPage() {
     );
   }
 
-  if (!sub) {
+  if (!sub || sub.status === 'expired') {
     return (
       <DashboardLayout title="Subscription" legalFooterMaxWidth="max-w-2xl">
         <div className="max-w-lg mx-auto text-center glass-card p-12">
-          <div className="text-5xl mb-4">■</div>
-          <h2 className="text-white font-bold text-xl mb-2">No Active Subscription</h2>
+          <div className="text-5xl mb-4">⛳</div>
+          <h2 className="text-white font-bold text-xl mb-2">
+            {sub?.status === 'expired' ? 'Your Subscription Has Ended' : 'No Active Subscription'}
+          </h2>
           <p className="text-dark-400 mb-6">
-            Subscribe to enter monthly draws, log your scores, and support a charity you love.
+            {sub?.status === 'expired'
+              ? 'Your previous plan has completed. Renew now to continue entering monthly draws, submitting golf scores, and supporting your chosen charity!'
+              : 'Subscribe to enter monthly draws, log your scores, and support a charity you love.'}
           </p>
-          <Link href="/dashboard/subscribe" className="btn-gold px-8 py-3 inline-block">
-            Choose a Plan →
+          <Link href="/dashboard/subscribe" className="btn-gold px-8 py-3 inline-block font-bold">
+            {sub?.status === 'expired' ? 'Renew Subscription Now →' : 'Choose a Plan →'}
           </Link>
         </div>
       </DashboardLayout>
@@ -82,14 +86,22 @@ export default function SubscriptionPage() {
                 <div className="flex items-center gap-2 mb-1">
                   <span
                     className={
-                      sub.status === 'active'
+                      daysLeft === 0
+                        ? 'badge-error'
+                        : sub.status === 'active'
                         ? 'badge-success'
                         : sub.cancel_at_period_end
                         ? 'badge-warning'
                         : 'badge-error'
                     }
                   >
-                    {sub.cancel_at_period_end ? 'Cancelling' : sub.status === 'active' ? 'Active' : sub.status}
+                    {daysLeft === 0
+                      ? 'Expired'
+                      : sub.cancel_at_period_end
+                      ? 'Cancelling'
+                      : sub.status === 'active'
+                      ? 'Active'
+                      : sub.status}
                   </span>
                 </div>
                 <h2 className="text-white font-bold text-xl capitalize">
@@ -106,7 +118,7 @@ export default function SubscriptionPage() {
                 <div className="text-dark-400 text-sm">Days Remaining</div>
                 <div
                   className={`text-4xl font-display font-bold ${
-                    daysLeft < 7 ? 'text-red-400' : 'gradient-text'
+                    daysLeft === 0 || daysLeft < 7 ? 'text-red-400' : 'gradient-text'
                   }`}
                 >
                   {daysLeft}
@@ -170,6 +182,59 @@ export default function SubscriptionPage() {
             </div>
           </div>
         </motion.div>
+
+        {/* Action card: Renew / Extend Subscription if daysLeft == 0 or cancelling */}
+        {(daysLeft === 0 || sub.cancel_at_period_end || sub.status === 'expired') && (
+          <div className="glass-card p-6 border border-brand-500/30 bg-brand-950/20">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-white font-bold text-lg mb-1">
+                  {daysLeft === 0 ? 'Renew Your Subscription' : 'Extend Your Subscription'}
+                </h3>
+                <p className="text-dark-300 text-sm">
+                  {sub.cancel_at_period_end
+                    ? `Your plan will end on ${sub.current_period_end ? format(new Date(sub.current_period_end), 'MMMM d, yyyy') : 'period end'}. You can buy another plan now to queue it automatically!`
+                    : 'Subscribe to another plan to keep your monthly draw entries active.'}
+                </p>
+              </div>
+              <Link href="/dashboard/subscribe" className="btn-gold px-6 py-3 font-bold text-sm whitespace-nowrap">
+                Subscribe / Renew Plan →
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Queued Subscriptions */}
+        {queuedSubs && queuedSubs.length > 0 && (
+          <div className="glass-card p-6">
+            <h3 className="text-white font-semibold text-base mb-3 flex items-center gap-2">
+              <span>⏳</span> Queued Subscriptions ({queuedSubs.length})
+            </h3>
+            <p className="text-dark-400 text-xs mb-4">
+              These plans are paid and queued. They will start automatically as soon as your current plan ends!
+            </p>
+            <div className="space-y-3">
+              {queuedSubs.map((q) => (
+                <div key={q.id} className="p-4 rounded-xl bg-dark-800/50 border border-white/5 flex justify-between items-center">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="badge-warning text-xs">Queued</span>
+                      <span className="text-white font-semibold capitalize text-sm">{q.plan_type} Plan</span>
+                    </div>
+                    <div className="text-dark-400 text-xs mt-1">
+                      Starts: {q.current_period_start ? format(new Date(q.current_period_start), 'MMM d, yyyy') : '—'}
+                      {' · '}
+                      Ends: {q.current_period_end ? format(new Date(q.current_period_end), 'MMM d, yyyy') : '—'}
+                    </div>
+                  </div>
+                  <div className="text-brand-400 font-mono font-bold text-sm">
+                    ₹{(q.amount || 0).toLocaleString('en-IN')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Cancel / manage */}
         {sub.status === 'pending' && (

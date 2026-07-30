@@ -199,18 +199,36 @@ router.post('/webhook', async (req, res) => {
   }
 });
 
-const buildSubscriptionPeriod = (plan_type) => {
-  const periodStart = new Date();
-  const periodEnd = new Date();
+const buildSubscriptionPeriod = async (userId, plan_type) => {
+  const { data: latestSub } = await supabaseAdmin
+    .from('subscriptions')
+    .select('current_period_end')
+    .eq('user_id', userId)
+    .in('status', ['active', 'queued'])
+    .order('current_period_end', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const now = new Date();
+  let periodStart = now;
+  let isQueued = false;
+
+  if (latestSub?.current_period_end && new Date(latestSub.current_period_end) > now) {
+    periodStart = new Date(latestSub.current_period_end);
+    isQueued = true;
+  }
+
+  const periodEnd = new Date(periodStart);
   if (plan_type === 'monthly') {
     periodEnd.setMonth(periodEnd.getMonth() + 1);
   } else {
     periodEnd.setFullYear(periodEnd.getFullYear() + 1);
   }
-  return { periodStart, periodEnd };
+
+  return { periodStart, periodEnd, isQueued };
 };
 
-// POST /api/payments/create-hosted - Create pending subscription for hosted payment page
+// POST /api/payments/create-hosted - Create subscription for hosted payment page
 router.post('/create-hosted', [
   authenticate,
   body('plan_type').isIn(['monthly', 'yearly']),
@@ -224,31 +242,15 @@ router.post('/create-hosted', [
     }
 
     const { plan_type, charity_id, charity_percentage = 10 } = req.body;
-
-    const { data: existingSub } = await supabaseAdmin
-      .from('subscriptions')
-      .select('id, status')
-      .eq('user_id', req.user.id)
-      .in('status', ['active', 'pending'])
-      .maybeSingle();
-
-    if (existingSub?.status === 'active') {
-      return res.status(409).json({ error: 'You already have an active subscription' });
-    }
-
-    if (existingSub?.status === 'pending') {
-      return res.json({ subscription_id: existingSub.id });
-    }
-
     const plan = PLANS[plan_type];
-    const { periodStart, periodEnd } = buildSubscriptionPeriod(plan_type);
+    const { periodStart, periodEnd, isQueued } = await buildSubscriptionPeriod(req.user.id, plan_type);
 
     const { data: subscription, error } = await supabaseAdmin
       .from('subscriptions')
       .insert({
         user_id: req.user.id,
         plan_type,
-        status: 'pending',
+        status: isQueued ? 'queued' : 'pending',
         charity_id,
         charity_percentage,
         amount: plan.price / 100,
@@ -297,7 +299,7 @@ router.post('/confirm-hosted', [
         .from('subscriptions')
         .select('*, charities(id, name), users(email, first_name)')
         .eq('user_id', req.user.id)
-        .eq('status', 'pending')
+        .in('status', ['pending', 'queued'])
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -342,40 +344,18 @@ router.post('/confirm-hosted', [
       prize_pool_amount: prizePoolAmount
     });
 
+    const isFutureStart = new Date(subscription.current_period_start) > new Date();
     await supabaseAdmin
       .from('subscriptions')
-      .update({ status: 'active' })
+      .update({ status: isFutureStart ? 'queued' : 'active' })
       .eq('id', subscription.id);
 
-    await emailService.sendSubscriptionConfirmation(
-      req.user.email,
-      req.user.first_name,
-      subscription.plan_type,
-      amount * 100
-    ).catch(console.error);
-
-    await emailService.sendCharityContributionReceipt(
-      req.user.email,
-      req.user.first_name,
-      charityAmount,
-      subscription.charities?.name,
-      subscription.plan_type
-    ).catch(console.error);
-
-    await supabaseAdmin.from('notifications').insert({
-      user_id: req.user.id,
-      type: 'subscription_active',
-      title: 'Subscription Activated! 🎉',
-      message: `Your ${subscription.plan_type} subscription is now active. You can enter draws and track your contributions.`,
-      metadata: { subscription_id: subscription.id, plan_type: subscription.plan_type }
-    });
-
     res.json({
-      message: 'Hosted payment confirmed and subscription activated',
+      message: 'Payment confirmed',
       subscription: {
         id: subscription.id,
         plan_type: subscription.plan_type,
-        status: 'active',
+        status: isFutureStart ? 'queued' : 'active',
         current_period_end: subscription.current_period_end
       }
     });
@@ -399,24 +379,12 @@ router.post('/create-order', [
     }
 
     const { plan_type, charity_id, charity_percentage = 10 } = req.body;
-
-    // Check existing active subscription
-    const { data: existingSub } = await supabaseAdmin
-      .from('subscriptions')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .eq('status', 'active')
-      .maybeSingle();
-
-    if (existingSub) {
-      return res.status(409).json({ error: 'You already have an active subscription' });
-    }
-
     const plan = PLANS[plan_type];
+    const { periodStart, periodEnd, isQueued } = await buildSubscriptionPeriod(req.user.id, plan_type);
+
     let orderId;
 
     if (IS_SANDBOX) {
-      // SANDBOX: Generate a dummy order ID
       orderId = `order_sandbox_${Date.now()}`;
       console.log(`[SANDBOX] Created dummy order: ${orderId} for ₹${plan.price / 100}`);
     } else {
@@ -438,23 +406,12 @@ router.post('/create-order', [
         console.warn('Razorpay API failed (falling back to sandbox order):', rzpErr.error?.description || rzpErr.message || rzpErr);
         orderId = `order_sandbox_${Date.now()}`;
       }
-    }
-
-    // Create pending subscription
-    const periodStart = new Date();
-    const periodEnd = new Date();
-    if (plan_type === 'monthly') {
-      periodEnd.setMonth(periodEnd.getMonth() + 1);
-    } else {
-      periodEnd.setFullYear(periodEnd.getFullYear() + 1);
-    }
-
     const { data: subscription } = await supabaseAdmin
       .from('subscriptions')
       .insert({
         user_id: req.user.id,
         plan_type,
-        status: 'pending',
+        status: isQueued ? 'queued' : 'pending',
         charity_id,
         charity_percentage,
         amount: plan.price / 100,

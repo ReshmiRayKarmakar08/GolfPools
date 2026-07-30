@@ -306,26 +306,6 @@ export default function SubscribePage() {
     }
   };
 
-  if (existingSub?.status === 'active') {
-    return (
-      <DashboardLayout title="Subscription" legalFooterMaxWidth="max-w-lg">
-        <div className="max-w-lg mx-auto text-center glass-card p-10">
-          <div className="mb-4"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#00E5CC" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="9 12 12 15 16 9"/></svg></div>
-          <h2 className="text-white font-bold text-xl mb-2">You're already subscribed!</h2>
-          <p className="text-dark-400 mb-6">
-            Your {existingSub.plan_type} subscription is active until{' '}
-            {new Date(existingSub.current_period_end).toLocaleDateString('en-IN', {
-              day: 'numeric', month: 'long', year: 'numeric',
-            })}.
-          </p>
-          <button onClick={() => router.push('/dashboard')} className="btn-primary px-8 py-3">
-            Go to Dashboard
-          </button>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
   return (
     <DashboardLayout title="Subscribe" legalFooterMaxWidth="max-w-4xl">
       <Head>
@@ -333,6 +313,23 @@ export default function SubscribePage() {
       </Head>
 
       <div className="max-w-4xl mx-auto">
+        {existingSub?.status === 'active' && (
+          <div className="mb-6 p-4 rounded-xl glass-card border border-brand-500/40 bg-brand-950/30 text-brand-300 text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <span className="font-bold text-white">Active Plan Lined Up: </span>
+              Your current {existingSub.plan_type} plan ends on{' '}
+              {existingSub.current_period_end
+                ? new Date(existingSub.current_period_end).toLocaleDateString('en-IN', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })
+                : 'period end'}
+              . Purchasing now will <strong>queue your new subscription</strong> to start seamlessly as soon as your current plan ends!
+            </div>
+          </div>
+        )}
+
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-white">Choose Your Plan</h2>
           <p className="text-dark-400 mt-1">
