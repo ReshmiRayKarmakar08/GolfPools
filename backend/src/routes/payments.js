@@ -406,7 +406,9 @@ router.post('/create-order', [
         console.warn('Razorpay API failed (falling back to sandbox order):', rzpErr.error?.description || rzpErr.message || rzpErr);
         orderId = `order_sandbox_${Date.now()}`;
       }
-    const { data: subscription } = await supabaseAdmin
+    }
+
+    const { data: subscription, error: subErr } = await supabaseAdmin
       .from('subscriptions')
       .insert({
         user_id: req.user.id,
@@ -420,6 +422,8 @@ router.post('/create-order', [
       })
       .select()
       .single();
+
+    if (subErr) throw subErr;
 
     res.json({
       order_id: orderId,
