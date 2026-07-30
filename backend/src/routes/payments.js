@@ -204,7 +204,7 @@ const buildSubscriptionPeriod = async (userId, plan_type) => {
     .from('subscriptions')
     .select('current_period_end')
     .eq('user_id', userId)
-    .in('status', ['active', 'queued'])
+    .in('status', ['active', 'pending'])
     .order('current_period_end', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -250,7 +250,7 @@ router.post('/create-hosted', [
       .insert({
         user_id: req.user.id,
         plan_type,
-        status: isQueued ? 'queued' : 'pending',
+        status: 'pending',
         charity_id,
         charity_percentage,
         amount: plan.price / 100,
@@ -411,7 +411,7 @@ router.post('/create-order', [
     const insertPayload = {
       user_id: req.user.id,
       plan_type,
-      status: isQueued ? 'queued' : 'pending',
+      status: 'pending',
       charity_id,
       charity_percentage,
       amount: plan.price / 100,
@@ -527,7 +527,7 @@ router.post('/verify', [
         .from('subscriptions')
         .select('*, charities(id, name)')
         .eq('user_id', req.user.id)
-        .in('status', ['active', 'queued'])
+        .in('status', ['active', 'pending'])
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -546,7 +546,7 @@ router.post('/verify', [
       return res.status(404).json({ error: 'Subscription not found' });
     }
 
-    if (subscription.status === 'active' || subscription.status === 'queued') {
+    if (subscription.status === 'active') {
       return res.json({
         message: `Subscription is ${subscription.status}`,
         subscription: {
@@ -595,8 +595,7 @@ router.post('/verify', [
       }
     }
 
-    const isFutureStart = subscription.current_period_start && new Date(subscription.current_period_start) > new Date();
-    const finalStatus = isFutureStart ? 'queued' : 'active';
+    const finalStatus = 'active';
 
     try {
       await supabaseAdmin
@@ -682,7 +681,7 @@ router.post('/verify', [
         .from('subscriptions')
         .select('*')
         .eq('user_id', req.user?.id)
-        .in('status', ['active', 'queued'])
+        .in('status', ['active', 'pending'])
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
