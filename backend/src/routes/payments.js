@@ -492,7 +492,7 @@ router.post('/verify', [
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, subscription_id } = req.body;
     let paymentMethod = null;
 
-    let isSandboxFallback = ACCEPT_ANY_PAYMENT || razorpay_order_id?.startsWith('order_sandbox_');
+    let isSandboxFallback = ACCEPT_ANY_PAYMENT || razorpay_order_id?.startsWith('order_sandbox_') || razorpay_payment_id?.startsWith('pay_sandbox_');
 
     if (!isSandboxFallback) {
       try {

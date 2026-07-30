@@ -180,6 +180,22 @@ export default function SubscribePage() {
         charity_percentage: charityPct,
       });
 
+      if (orderData.sandbox) {
+        // Handle Sandbox / Fallback mode directly without opening broken Razorpay JS popup
+        await paymentsAPI.verifyPayment({
+          razorpay_order_id: orderData.order_id,
+          razorpay_payment_id: `pay_sandbox_${Date.now()}`,
+          razorpay_signature: 'sandbox_signature',
+          subscription_id: orderData.subscription_id,
+        });
+
+        await refreshUser();
+        toast.success('Subscription activated successfully! 🎉');
+        router.push('/dashboard');
+        setPaying(false);
+        return;
+      }
+
       const options = {
         key: orderData.key || process.env.NEXT_PUBLIC_RAZORPAY_KEY,
         amount: orderData.amount,
