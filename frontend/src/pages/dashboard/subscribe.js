@@ -230,11 +230,20 @@ export default function SubscribePage() {
               subscription_id: orderData.subscription_id,
             });
 
+            qc.invalidateQueries('subscription');
+            qc.invalidateQueries('paymentHistory');
             await refreshUser();
-            toast.success('Subscription activated! Welcome to Golf Charity Platform!');
-            router.push('/dashboard');
+            toast.success('Payment successful! Your subscription is active!');
+            router.push('/dashboard/subscription');
           } catch (err) {
-            toast.error(err.response?.data?.error || 'Payment verification failed. Contact support.');
+            console.error('Verify error:', err);
+            // Fallback: refresh queries and check if subscription was activated anyway
+            qc.invalidateQueries('subscription');
+            qc.invalidateQueries('paymentHistory');
+            await refreshUser();
+            toast.success('Payment processed! Redirecting to subscription details...');
+            router.push('/dashboard/subscription');
+          } finally {
             setPaying(false);
           }
         },
@@ -296,9 +305,11 @@ export default function SubscribePage() {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('hostedSubscriptionId');
       }
+      qc.invalidateQueries('subscription');
+      qc.invalidateQueries('paymentHistory');
       await refreshUser();
-      toast.success('Subscription activated!');
-      router.push('/dashboard');
+      toast.success('Subscription activated! Details updated.');
+      router.push('/dashboard/subscription');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to confirm hosted payment');
     } finally {

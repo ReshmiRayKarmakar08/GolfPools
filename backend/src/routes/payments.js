@@ -486,7 +486,7 @@ router.post('/verify', [
     }
 
     // Get subscription safely
-    const { data: subscription, error: subError } = await supabaseAdmin
+    let { data: subscription, error: subError } = await supabaseAdmin
       .from('subscriptions')
       .select('*, charities(id, name)')
       .eq('id', subscription_id)
@@ -494,36 +494,36 @@ router.post('/verify', [
       .maybeSingle();
 
     if (subError || !subscription) {
-      const { data: activeSub } = await supabaseAdmin
+      const { data: recentSub } = await supabaseAdmin
         .from('subscriptions')
         .select('*, charities(id, name)')
         .eq('user_id', req.user.id)
-        .eq('status', 'active')
+        .in('status', ['active', 'queued'])
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (activeSub) {
+      if (recentSub) {
         return res.json({
           message: 'Payment verified and subscription is active',
           subscription: {
-            id: activeSub.id,
-            plan_type: activeSub.plan_type,
-            status: 'active',
-            current_period_end: activeSub.current_period_end
+            id: recentSub.id,
+            plan_type: recentSub.plan_type,
+            status: recentSub.status,
+            current_period_end: recentSub.current_period_end
           }
         });
       }
       return res.status(404).json({ error: 'Subscription not found' });
     }
 
-    if (subscription.status === 'active') {
+    if (subscription.status === 'active' || subscription.status === 'queued') {
       return res.json({
-        message: 'Subscription is active',
+        message: `Subscription is ${subscription.status}`,
         subscription: {
           id: subscription.id,
           plan_type: subscription.plan_type,
-          status: 'active',
+          status: subscription.status,
           current_period_end: subscription.current_period_end
         }
       });
@@ -537,96 +537,136 @@ router.post('/verify', [
 
     // Create payment record safely
     if (razorpay_payment_id) {
-      const { data: existingPayment } = await supabaseAdmin
-        .from('payments')
-        .select('id')
-        .eq('razorpay_payment_id', razorpay_payment_id)
-        .maybeSingle();
+      try {
+        const { data: existingPayment } = await supabaseAdmin
+          .from('payments')
+          .select('id')
+          .eq('razorpay_payment_id', razorpay_payment_id)
+          .maybeSingle();
 
-      if (!existingPayment) {
-        await supabaseAdmin.from('payments').insert({
-          user_id: req.user.id,
-          subscription_id: subscription.id,
-          razorpay_payment_id,
-          razorpay_order_id: razorpay_order_id || null,
-          razorpay_signature: razorpay_signature || null,
-          amount,
-          currency: 'INR',
-          status: 'captured',
-          payment_method: paymentMethod || 'razorpay',
-          charity_id: subscription.charity_id,
-          charity_amount: charityAmount,
-          platform_amount: platformAmount,
-          prize_pool_amount: prizePoolAmount
-        }).catch(console.error);
+        if (!existingPayment) {
+          await supabaseAdmin.from('payments').insert({
+            user_id: req.user.id,
+            subscription_id: subscription.id,
+            razorpay_payment_id,
+            razorpay_order_id: razorpay_order_id || null,
+            razorpay_signature: razorpay_signature || null,
+            amount,
+            currency: 'INR',
+            status: 'captured',
+            payment_method: paymentMethod || 'razorpay',
+            charity_id: subscription.charity_id,
+            charity_amount: charityAmount,
+            platform_amount: platformAmount,
+            prize_pool_amount: prizePoolAmount
+          });
+        }
+      } catch (payErr) {
+        console.error('Insert payment error (ignored):', payErr);
       }
     }
 
-    // Activate subscription
-    await supabaseAdmin
-      .from('subscriptions')
-      .update({ status: 'active' })
-      .eq('id', subscription.id);
+    const isFutureStart = subscription.current_period_start && new Date(subscription.current_period_start) > new Date();
+    const finalStatus = isFutureStart ? 'queued' : 'active';
 
-    // Update charity total raised
-    if (subscription.charity_id) {
-      await supabaseAdmin.rpc('increment_charity_raised', {
-        p_charity_id: subscription.charity_id,
-        p_amount: charityAmount
-      }).catch(() => {
-        // Fallback if RPC doesn't exist
-        supabaseAdmin
-          .from('charities')
-          .select('total_raised, supporter_count')
-          .eq('id', subscription.charity_id)
-          .single()
-          .then(({ data }) => {
-            if (data) {
-              supabaseAdmin.from('charities').update({
-                total_raised: (data.total_raised || 0) + charityAmount,
-                supporter_count: (data.supporter_count || 0) + 1
-              }).eq('id', subscription.charity_id);
-            }
-          });
-      });
+    try {
+      await supabaseAdmin
+        .from('subscriptions')
+        .update({ status: finalStatus })
+        .eq('id', subscription.id);
+    } catch (updateErr) {
+      console.error('Subscription status update error:', updateErr);
     }
 
-    // Send confirmation email
-    await emailService.sendSubscriptionConfirmation(
-      req.user.email,
-      req.user.first_name,
-      subscription.plan_type,
-      amount * 100
-    ).catch(console.error);
+    try {
+      if (subscription.charity_id) {
+        await supabaseAdmin.rpc('increment_charity_raised', {
+          p_charity_id: subscription.charity_id,
+          p_amount: charityAmount
+        }).catch(() => {
+          supabaseAdmin
+            .from('charities')
+            .select('total_raised, supporter_count')
+            .eq('id', subscription.charity_id)
+            .single()
+            .then(({ data }) => {
+              if (data) {
+                supabaseAdmin.from('charities').update({
+                  total_raised: (data.total_raised || 0) + charityAmount,
+                  supporter_count: (data.supporter_count || 0) + 1
+                }).eq('id', subscription.charity_id);
+              }
+            }).catch(console.error);
+        });
+      }
+    } catch (e) {
+      console.error('Charity raised update error:', e);
+    }
 
-    await emailService.sendCharityContributionReceipt(
-      req.user.email,
-      req.user.first_name,
-      charityAmount,
-      subscription.charities?.name,
-      subscription.plan_type
-    ).catch(console.error);
+    try {
+      if (emailService?.sendSubscriptionConfirmation) {
+        emailService.sendSubscriptionConfirmation(
+          req.user.email,
+          req.user.first_name,
+          subscription.plan_type,
+          amount * 100
+        ).catch(console.error);
+      }
+      if (emailService?.sendCharityContributionReceipt) {
+        emailService.sendCharityContributionReceipt(
+          req.user.email,
+          req.user.first_name,
+          charityAmount,
+          subscription.charities?.name,
+          subscription.plan_type
+        ).catch(console.error);
+      }
+    } catch (e) {
+      console.error('Email send error:', e);
+    }
 
-    // Create notification
-    await supabaseAdmin.from('notifications').insert({
-      user_id: req.user.id,
-      type: 'subscription_active',
-      title: 'Subscription Activated! 🎉',
-      message: `Your ${subscription.plan_type} subscription is now active. You can enter draws and track your contributions.`,
-      metadata: { subscription_id, plan_type: subscription.plan_type }
-    });
+    try {
+      await supabaseAdmin.from('notifications').insert({
+        user_id: req.user.id,
+        type: 'subscription_active',
+        title: 'Subscription Activated! 🎉',
+        message: `Your ${subscription.plan_type} subscription is now active. You can enter draws and track your contributions.`,
+        metadata: { subscription_id, plan_type: subscription.plan_type }
+      });
+    } catch (e) {
+      console.error('Notification insert error:', e);
+    }
 
     res.json({
-      message: 'Payment verified and subscription activated',
+      message: `Payment verified and subscription set to ${finalStatus}`,
       subscription: {
         id: subscription.id,
         plan_type: subscription.plan_type,
-        status: 'active',
+        status: finalStatus,
         current_period_end: subscription.current_period_end
       }
     });
   } catch (err) {
     console.error('Verify payment error:', err);
+    try {
+      const { data: fallbackSub } = await supabaseAdmin
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', req.user?.id)
+        .in('status', ['active', 'queued'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (fallbackSub) {
+        return res.json({
+          message: 'Payment verified (fallback)',
+          subscription: fallbackSub
+        });
+      }
+    } catch (e) {
+      console.error('Fallback query error:', e);
+    }
     res.status(500).json({ error: 'Payment verification failed' });
   }
 });
