@@ -125,6 +125,7 @@ router.post('/register', [
         .from('users')
         .update({ default_charity_id: charity_id })
         .eq('id', user.id)
+        .then(() => {})
         .catch(console.error);
     }
 
@@ -538,6 +539,7 @@ router.post('/google', async (req, res) => {
         .from('users')
         .update({ avatar_url })
         .eq('id', user.id)
+        .then(() => {})
         .catch(console.error);
     }
 

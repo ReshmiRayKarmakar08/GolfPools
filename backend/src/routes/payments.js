@@ -608,24 +608,25 @@ router.post('/verify', [
 
     try {
       if (subscription.charity_id) {
-        await supabaseAdmin.rpc('increment_charity_raised', {
-          p_charity_id: subscription.charity_id,
-          p_amount: charityAmount
-        }).catch(() => {
-          supabaseAdmin
+        try {
+          await supabaseAdmin.rpc('increment_charity_raised', {
+            p_charity_id: subscription.charity_id,
+            p_amount: charityAmount
+          });
+        } catch {
+          const { data } = await supabaseAdmin
             .from('charities')
             .select('total_raised, supporter_count')
             .eq('id', subscription.charity_id)
-            .single()
-            .then(({ data }) => {
-              if (data) {
-                supabaseAdmin.from('charities').update({
-                  total_raised: (data.total_raised || 0) + charityAmount,
-                  supporter_count: (data.supporter_count || 0) + 1
-                }).eq('id', subscription.charity_id);
-              }
-            }).catch(console.error);
-        });
+            .single();
+
+          if (data) {
+            await supabaseAdmin.from('charities').update({
+              total_raised: (data.total_raised || 0) + charityAmount,
+              supporter_count: (data.supporter_count || 0) + 1
+            }).eq('id', subscription.charity_id);
+          }
+        }
       }
     } catch (e) {
       console.error('Charity raised update error:', e);
