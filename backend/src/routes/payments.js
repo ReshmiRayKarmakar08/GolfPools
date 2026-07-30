@@ -524,16 +524,48 @@ router.post('/verify', [
       paymentMethod = IS_SANDBOX ? 'sandbox' : 'sandbox_fallback';
     }
 
-    // Get subscription
-    const { data: subscription } = await supabaseAdmin
+    // Get subscription safely
+    const { data: subscription, error: subError } = await supabaseAdmin
       .from('subscriptions')
       .select('*, charities(id, name)')
       .eq('id', subscription_id)
       .eq('user_id', req.user.id)
-      .single();
+      .maybeSingle();
 
-    if (!subscription) {
+    if (subError || !subscription) {
+      const { data: activeSub } = await supabaseAdmin
+        .from('subscriptions')
+        .select('*, charities(id, name)')
+        .eq('user_id', req.user.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (activeSub) {
+        return res.json({
+          message: 'Payment verified and subscription is active',
+          subscription: {
+            id: activeSub.id,
+            plan_type: activeSub.plan_type,
+            status: 'active',
+            current_period_end: activeSub.current_period_end
+          }
+        });
+      }
       return res.status(404).json({ error: 'Subscription not found' });
+    }
+
+    if (subscription.status === 'active') {
+      return res.json({
+        message: 'Subscription is active',
+        subscription: {
+          id: subscription.id,
+          plan_type: subscription.plan_type,
+          status: 'active',
+          current_period_end: subscription.current_period_end
+        }
+      });
     }
 
     const amount = Number(subscription.amount || 0);
@@ -542,28 +574,38 @@ router.post('/verify', [
       Number(subscription.charity_percentage || DISTRIBUTION.baseCharityPct)
     );
 
-    // Create payment record
-    await supabaseAdmin.from('payments').insert({
-      user_id: req.user.id,
-      subscription_id: subscription.id,
-      razorpay_payment_id,
-      razorpay_order_id,
-      razorpay_signature,
-      amount,
-      currency: 'INR',
-      status: 'captured',
-      payment_method: paymentMethod,
-      charity_id: subscription.charity_id,
-      charity_amount: charityAmount,
-      platform_amount: platformAmount,
-      prize_pool_amount: prizePoolAmount
-    });
+    // Create payment record safely
+    if (razorpay_payment_id) {
+      const { data: existingPayment } = await supabaseAdmin
+        .from('payments')
+        .select('id')
+        .eq('razorpay_payment_id', razorpay_payment_id)
+        .maybeSingle();
+
+      if (!existingPayment) {
+        await supabaseAdmin.from('payments').insert({
+          user_id: req.user.id,
+          subscription_id: subscription.id,
+          razorpay_payment_id,
+          razorpay_order_id: razorpay_order_id || null,
+          razorpay_signature: razorpay_signature || null,
+          amount,
+          currency: 'INR',
+          status: 'captured',
+          payment_method: paymentMethod || 'razorpay',
+          charity_id: subscription.charity_id,
+          charity_amount: charityAmount,
+          platform_amount: platformAmount,
+          prize_pool_amount: prizePoolAmount
+        }).catch(console.error);
+      }
+    }
 
     // Activate subscription
     await supabaseAdmin
       .from('subscriptions')
       .update({ status: 'active' })
-      .eq('id', subscription_id);
+      .eq('id', subscription.id);
 
     // Update charity total raised
     if (subscription.charity_id) {

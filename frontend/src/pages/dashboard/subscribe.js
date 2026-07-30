@@ -211,43 +211,6 @@ export default function SubscribePage() {
           method: upiId ? 'upi' : undefined,
           vpa: upiId || undefined,
         },
-        method: {
-          upi: true,
-          card: true,
-          netbanking: true,
-          wallet: false,
-          emi: false,
-          paylater: false
-        },
-        config: {
-          display: {
-            blocks: {
-              upi_preferred: {
-                name: 'Pay by UPI',
-                instruments: [
-                  {
-                    method: 'upi',
-                    flows: ['collect', 'intent', 'qr'],
-                    apps: ['phonepe', 'google_pay', 'paytm']
-                  }
-                ]
-              },
-              netbanking_preferred: {
-                name: 'Popular Banks',
-                instruments: [
-                  {
-                    method: 'netbanking',
-                    banks: ['SBIN', 'HDFC', 'ICIC', 'UTIB', 'KKBK', 'UCBA', 'BARB', 'PUNB']
-                  }
-                ]
-              }
-            },
-            sequence: ['block.upi_preferred', 'block.netbanking_preferred', 'method.card'],
-            preferences: {
-              show_default_blocks: true
-            }
-          }
-        },
         theme: {
           color: '#00c6ff',
           backdrop_color: '#060813',
