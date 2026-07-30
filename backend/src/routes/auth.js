@@ -63,8 +63,8 @@ router.post('/register', [
       return res.status(409).json({ error: 'Email already registered' });
     }
 
-    // Hash password
-    const password_hash = await bcrypt.hash(password, 12);
+    // Hash password (work factor 10 for fast, secure hashing)
+    const password_hash = await bcrypt.hash(password, 10);
     const verification_token = uuidv4();
 
     // Create user (with fallback if optional column does not exist in DB)
@@ -119,22 +119,18 @@ router.post('/register', [
 
     console.log('User created successfully:', user.id);
 
-    // If charity selected, store preference in profile
+    // If charity selected, store preference asynchronously
     if (charity_id) {
-      console.log('Attempting to store charity preference:', charity_id);
-      const { error: updateError } = await supabaseAdmin
+      supabaseAdmin
         .from('users')
         .update({ default_charity_id: charity_id })
-        .eq('id', user.id);
-      
-      if (updateError) {
-        console.warn('Non-fatal: Failed to set default_charity_id (column might be missing):', updateError.message);
-      }
+        .eq('id', user.id)
+        .catch(console.error);
     }
 
-    // Send welcome + greeting email (non-blocking)
-    await emailService.sendWelcomeEmail(email, first_name, verification_token).catch(console.error);
-    await emailService.sendAccountGreetingEmail(email, first_name).catch(console.error);
+    // Send emails asynchronously (non-blocking for fast registration response)
+    emailService.sendWelcomeEmail(email, first_name, verification_token).catch(console.error);
+    emailService.sendAccountGreetingEmail(email, first_name).catch(console.error);
 
     const { accessToken, refreshToken } = generateTokens(user.id);
 
@@ -185,7 +181,7 @@ router.post('/login', [
         });
       }
 
-      const password_hash = await bcrypt.hash(adminPassword, 12);
+      const password_hash = await bcrypt.hash(adminPassword, 10);
       const insertPayload = {
         email: adminEmail,
         password_hash,
@@ -228,7 +224,7 @@ router.post('/login', [
           code: 'ADMIN_CREDENTIAL_REQUIRED'
         });
       }
-      const adminHash = await bcrypt.hash(adminPassword, 12);
+      const adminHash = await bcrypt.hash(adminPassword, 10);
       if (!user.password_hash || !(await bcrypt.compare(adminPassword, user.password_hash))) {
         const { data: updatedUser } = await supabaseAdmin
           .from('users')
@@ -404,7 +400,7 @@ router.post('/verify-password-otp', [
       return res.status(400).json({ error: 'OTP expired' });
     }
 
-    const password_hash = await bcrypt.hash(password, 12);
+    const password_hash = await bcrypt.hash(password, 10);
 
     await supabaseAdmin
       .from('users')
@@ -444,7 +440,7 @@ router.post('/reset-password', [
       return res.status(400).json({ error: 'Invalid or expired reset token' });
     }
 
-    const password_hash = await bcrypt.hash(password, 12);
+    const password_hash = await bcrypt.hash(password, 10);
 
     await supabaseAdmin
       .from('users')
@@ -503,11 +499,14 @@ router.post('/google', async (req, res) => {
       .maybeSingle();
 
     if (!user) {
+      const dummySecret = `google_${Date.now()}_${payload.sub}`;
+      const password_hash = await bcrypt.hash(dummySecret, 10);
+
       const { data: newUser, error } = await supabaseAdmin
         .from('users')
         .insert({
           email,
-          password_hash: await bcrypt.hash(`google_${Date.now()}_${payload.sub}`, 12),
+          password_hash,
           first_name,
           last_name,
           avatar_url,
@@ -521,17 +520,15 @@ router.post('/google', async (req, res) => {
       if (error) throw error;
       user = { ...newUser, is_active: true };
 
-      // First-time Google account creation greeting (non-blocking)
-      await emailService.sendAccountGreetingEmail(email, first_name).catch(console.error);
+      // First-time Google account creation greeting (asynchronous/non-blocking)
+      emailService.sendAccountGreetingEmail(email, first_name).catch(console.error);
     } else if (avatar_url && user.avatar_url !== avatar_url) {
-      // Update avatar if it changed in Google
-      const { data: updatedUser } = await supabaseAdmin
+      // Update avatar asynchronously if changed
+      supabaseAdmin
         .from('users')
         .update({ avatar_url })
         .eq('id', user.id)
-        .select('id, email, first_name, last_name, role, avatar_url')
-        .single();
-      if (updatedUser) user = { ...user, avatar_url: updatedUser.avatar_url };
+        .catch(console.error);
     }
 
     if (!user.is_active) {
