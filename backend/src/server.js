@@ -19,7 +19,6 @@ app.use(helmet({
 const allowedOrigins = [
   'http://localhost:3000',
   'https://golfpools-web.vercel.app',
-  'https://golfpools-web.vercel.app/',
   'https://golf-charity.vercel.app',
   'https://golfpools.vercel.app'
 ];
@@ -31,8 +30,11 @@ if (process.env.FRONTEND_URL) {
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error(`CORS blocked for origin: ${origin}`));
+    const normalizedOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+    const isAllowed = allowedOrigins.some(o => (o.endsWith('/') ? o.slice(0, -1) : o) === normalizedOrigin);
+    if (isAllowed) return callback(null, true);
+    console.warn(`CORS attempt from unlisted origin: ${origin}`);
+    return callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
