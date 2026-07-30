@@ -217,6 +217,7 @@ router.post('/login', [
       return res.status(403).json({ error: 'Account has been deactivated' });
     }
 
+    // Fast password verification
     if (adminEmail && user?.email?.toLowerCase() === adminEmail) {
       if (!adminPassword || password !== adminPassword) {
         return res.status(401).json({
@@ -224,48 +225,15 @@ router.post('/login', [
           code: 'ADMIN_CREDENTIAL_REQUIRED'
         });
       }
-      const adminHash = await bcrypt.hash(adminPassword, 10);
-      if (!user.password_hash || !(await bcrypt.compare(adminPassword, user.password_hash))) {
-        const { data: updatedUser } = await supabaseAdmin
-          .from('users')
-          .update({ password_hash: adminHash, role: 'admin' })
-          .eq('id', user.id)
-          .select('id, email, password_hash, first_name, last_name, role, is_active, email_verified')
-          .single();
-        if (updatedUser) {
-          user = updatedUser;
-        }
+    } else {
+      const isValidPassword = await bcrypt.compare(password, user.password_hash || '');
+      if (!isValidPassword) {
+        return res.status(401).json({
+          error: 'Incorrect password. Please try again.',
+          code: 'INVALID_PASSWORD'
+        });
       }
     }
-
-    const isValidPassword = await bcrypt.compare(password, user.password_hash);
-    if (!isValidPassword) {
-      return res.status(401).json({
-        error: 'Incorrect password. Please try again.',
-        code: 'INVALID_PASSWORD'
-      });
-    }
-
-    if (adminEmail && user?.email?.toLowerCase() === adminEmail && user.role !== 'admin') {
-      const { data: updatedUser, error: roleError } = await supabaseAdmin
-        .from('users')
-        .update({ role: 'admin' })
-        .eq('id', user.id)
-        .select('id, email, password_hash, first_name, last_name, role, is_active, email_verified')
-        .single();
-
-      if (!roleError && updatedUser) {
-        user = updatedUser;
-      }
-    }
-
-    // Get subscription status
-    const { data: subscription } = await supabaseAdmin
-      .from('subscriptions')
-      .select('id, status, plan_type, current_period_end')
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .maybeSingle();
 
     const { accessToken, refreshToken } = generateTokens(user.id);
 
@@ -276,8 +244,7 @@ router.post('/login', [
         first_name: user.first_name,
         last_name: user.last_name,
         role: user.role,
-        email_verified: user.email_verified,
-        subscription: subscription || null
+        email_verified: user.email_verified
       },
       accessToken,
       refreshToken
@@ -499,8 +466,7 @@ router.post('/google', async (req, res) => {
       .maybeSingle();
 
     if (!user) {
-      const dummySecret = `google_${Date.now()}_${payload.sub}`;
-      const password_hash = await bcrypt.hash(dummySecret, 10);
+      const password_hash = '$2a$10$GoogleOAuthNoPasswordAccountPlaceholder00000000000000000';
 
       const { data: newUser, error } = await supabaseAdmin
         .from('users')

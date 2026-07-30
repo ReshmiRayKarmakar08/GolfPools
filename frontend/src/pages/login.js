@@ -17,10 +17,12 @@ export default function LoginPage() {
   const { register, handleSubmit, setValue, formState: { errors } } = useForm();
 
   useEffect(() => {
+    router.prefetch('/dashboard');
+    router.prefetch('/admin');
     if (router.query.email) {
       setValue('email', String(router.query.email));
     }
-  }, [router.query.email, setValue]);
+  }, [router, setValue]);
 
   useEffect(() => {
     if (isLoading) return;

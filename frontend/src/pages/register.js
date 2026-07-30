@@ -31,6 +31,7 @@ export default function RegisterPage() {
   const { register, handleSubmit, setValue, formState: { errors } } = useForm();
 
   useEffect(() => {
+    router.prefetch('/dashboard');
     if (router.query.email) {
       setValue('email', String(router.query.email));
     }
