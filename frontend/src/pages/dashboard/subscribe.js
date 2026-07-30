@@ -582,58 +582,8 @@ export default function SubscribePage() {
                 )}
               </motion.button>
 
-              {hostedPaymentUrl && (
-                <button
-                  type="button"
-                  onClick={handleHostedPayment}
-                  className="btn-secondary w-full py-3 mt-3 text-sm"
-                >
-                  Pay on Razorpay Hosted Page
-                </button>
-              )}
-
-              <div className="mt-4 glass-card p-4">
-                <div className="text-white text-sm font-semibold mb-2">Hosted Payment Status</div>
-                <p className="text-dark-400 text-xs mb-3">
-                  After you pay on the hosted page, we’ll auto‑activate your subscription within a minute.
-                </p>
-                <label className="block text-xs text-dark-400 mb-2">
-                  Razorpay Payment ID (if you were redirected without auto‑verification)
-                </label>
-                <input
-                  type="text"
-                  value={hostedPaymentId}
-                  onChange={(e) => setHostedPaymentId(e.target.value.trim())}
-                  className="input-field text-sm mb-3"
-                  placeholder="pay_XXXXXXXXXXXXXX"
-                />
-                <button
-                  className="btn-secondary w-full mt-1 py-2.5"
-                  onClick={async () => {
-                    try {
-                      if (hostedPaymentId) {
-                        await confirmHostedPayment();
-                        return;
-                      }
-                      const { data } = await subscriptionsAPI.getCurrent();
-                      if (data?.subscription?.status === 'active') {
-                        localStorage.removeItem('hostedSubscriptionId');
-                        toast.success('Subscription activated!');
-                        router.push('/dashboard');
-                      } else {
-                        toast('Still verifying payment…', { icon: '⏳' });
-                      }
-                    } catch {
-                      toast.error('Unable to check status right now.');
-                    }
-                  }}
-                >
-                  Refresh Payment Status
-                </button>
-              </div>
-
               {!selectedCharity && (
-                <p className="text-amber-400 text-xs text-center mt-2">
+                <p className="text-amber-400 text-xs text-center mt-3">
                   ! Please select a charity to continue
                 </p>
               )}
