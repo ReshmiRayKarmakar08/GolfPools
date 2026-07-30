@@ -712,18 +712,9 @@ export default function SubscribePage() {
                   disabled={paying || !consentChecked}
                   className="btn-primary flex-1 py-2.5 disabled:opacity-50"
                 >
-                  {paying ? 'Opening...' : 'Pay In-App'}
+                  {paying ? 'Opening...' : 'Pay'}
                 </button>
               </div>
-              {hostedPaymentUrl && (
-                <button
-                  type="button"
-                  onClick={handleHostedPayment}
-                  className="btn-secondary w-full mt-3 py-2.5"
-                >
-                  Pay on Hosted Page
-                </button>
-              )}
               {!consentChecked && (
                 <p className="text-[11px] text-amber-300 mt-2">
                   Please provide consent to continue.

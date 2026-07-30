@@ -408,22 +408,51 @@ router.post('/create-order', [
       }
     }
 
-    const { data: subscription, error: subErr } = await supabaseAdmin
+    const insertPayload = {
+      user_id: req.user.id,
+      plan_type,
+      status: isQueued ? 'queued' : 'pending',
+      charity_id,
+      charity_percentage,
+      amount: plan.price / 100,
+      current_period_start: periodStart.toISOString(),
+      current_period_end: periodEnd.toISOString()
+    };
+
+    let { data: subscription, error: subErr } = await supabaseAdmin
       .from('subscriptions')
-      .insert({
-        user_id: req.user.id,
-        plan_type,
-        status: isQueued ? 'queued' : 'pending',
-        charity_id,
-        charity_percentage,
-        amount: plan.price / 100,
-        current_period_start: periodStart.toISOString(),
-        current_period_end: periodEnd.toISOString()
-      })
+      .insert(insertPayload)
       .select()
       .single();
 
-    if (subErr) throw subErr;
+    if (subErr) {
+      console.warn('Subscription insert failed, attempting fallback insert:', subErr.message || subErr);
+      const fallbackPayload = { ...insertPayload };
+      delete fallbackPayload.charity_percentage;
+
+      let retry = await supabaseAdmin
+        .from('subscriptions')
+        .insert(fallbackPayload)
+        .select()
+        .single();
+
+      if (retry.error) {
+        delete fallbackPayload.charity_id;
+        retry = await supabaseAdmin
+          .from('subscriptions')
+          .insert(fallbackPayload)
+          .select()
+          .single();
+      }
+
+      subscription = retry.data;
+      subErr = retry.error;
+    }
+
+    if (subErr) {
+      console.error('CRITICAL: Subscription creation failed:', subErr);
+      return res.status(500).json({ error: 'Failed to create payment order record' });
+    }
 
     res.json({
       order_id: orderId,
