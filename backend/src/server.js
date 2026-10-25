@@ -63,22 +63,16 @@ app.use('/api/health', healthRoutes);
 // Rate limiting (applied AFTER health routes are declared)
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300, // Increased headroom for legitimate traffic
+  max: 1000, // Generous headroom for smooth user activity
   message: { error: 'Too many requests, please try again later.' },
   skip: (req) => {
     const path = req.originalUrl || req.url || '';
-    return path.includes('health');
+    // Skip health checks and auth routes so users can log in freely without restrictions
+    return path.includes('health') || path.includes('/auth/');
   }
 });
 app.use('/api/', globalLimiter);
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: { error: 'Too many authentication attempts, please try again later.' }
-});
-app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/register', authLimiter);
 
 // =============================================
 // ROUTES
