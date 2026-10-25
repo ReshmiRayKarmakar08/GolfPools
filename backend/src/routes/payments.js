@@ -723,15 +723,45 @@ router.get('/history', authenticate, async (req, res) => {
 // POST /api/payments/cancel-subscription
 router.post('/cancel-subscription', authenticate, async (req, res) => {
   try {
-    const { data: subscription } = await supabaseAdmin
-      .from('subscriptions')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .eq('status', 'active')
-      .single();
+    const { subscriptionId } = req.body || {};
+    let subscription = null;
+
+    if (subscriptionId) {
+      const { data } = await supabaseAdmin
+        .from('subscriptions')
+        .select('id, current_period_end, status')
+        .eq('id', subscriptionId)
+        .eq('user_id', req.user.id)
+        .maybeSingle();
+      if (data) subscription = data;
+    }
 
     if (!subscription) {
-      return res.status(404).json({ error: 'No active subscription found' });
+      // Find active or queued subscriptions for this user without .single()
+      const { data: subs } = await supabaseAdmin
+        .from('subscriptions')
+        .select('id, current_period_end, status, current_period_start')
+        .eq('user_id', req.user.id)
+        .in('status', ['active', 'queued'])
+        .order('current_period_start', { ascending: true });
+
+      if (subs && subs.length > 0) {
+        const now = new Date();
+        subscription = subs.find(s => new Date(s.current_period_start) <= now && new Date(s.current_period_end) > now) || subs[0];
+      } else {
+        const { data: anyActive } = await supabaseAdmin
+          .from('subscriptions')
+          .select('id, current_period_end, status')
+          .eq('user_id', req.user.id)
+          .eq('status', 'active')
+          .limit(1)
+          .maybeSingle();
+        subscription = anyActive;
+      }
+    }
+
+    if (!subscription) {
+      return res.status(404).json({ error: 'No active subscription found to cancel' });
     }
 
     const cancelledAt = new Date().toISOString();
@@ -749,22 +779,17 @@ router.post('/cancel-subscription', authenticate, async (req, res) => {
       .eq('id', req.user.id)
       .maybeSingle();
 
-    const { data: currentSub } = await supabaseAdmin
-      .from('subscriptions')
-      .select('current_period_end')
-      .eq('id', subscription.id)
-      .maybeSingle();
-
     await emailService.sendSubscriptionCancellation(
       user?.email || req.user.email,
       user?.first_name || req.user.first_name,
-      currentSub?.current_period_end
-        ? new Date(currentSub.current_period_end).toLocaleDateString('en-IN')
+      subscription?.current_period_end
+        ? new Date(subscription.current_period_end).toLocaleDateString('en-IN')
         : 'the end of your current billing cycle'
     ).catch(console.error);
 
-    res.json({ message: 'Subscription will be cancelled at the end of the current period' });
+    res.json({ message: 'Subscription will be cancelled at the end of the current period', subscriptionId: subscription.id });
   } catch (err) {
+    console.error('Cancel subscription error:', err);
     res.status(500).json({ error: 'Failed to cancel subscription' });
   }
 });

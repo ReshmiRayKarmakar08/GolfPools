@@ -85,6 +85,7 @@ export const scoresAPI = {
 export const subscriptionsAPI = {
   getCurrent: () => api.get('/subscriptions/current'),
   updateCharity: (data) => api.patch('/subscriptions/charity', data),
+  cancel: (data) => api.post('/subscriptions/cancel', data || {}),
 };
 
 // Payments
@@ -94,7 +95,7 @@ export const paymentsAPI = {
   createHosted: (data) => api.post('/payments/create-hosted', data),
   confirmHosted: (data) => api.post('/payments/confirm-hosted', data),
   getHistory: () => api.get('/payments/history'),
-  cancelSubscription: () => api.post('/payments/cancel-subscription'),
+  cancelSubscription: (data) => api.post('/payments/cancel-subscription', data || {}),
 };
 
 // Draws

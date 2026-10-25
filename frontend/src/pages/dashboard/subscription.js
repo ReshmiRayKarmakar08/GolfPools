@@ -19,14 +19,17 @@ export default function SubscriptionPage() {
     select: (r) => r.data.payments,
   });
 
-  const cancelMutation = useMutation(paymentsAPI.cancelSubscription, {
-    onSuccess: () => {
-      qc.invalidateQueries('subscription');
-      toast.success('Subscription will cancel at period end');
-      setConfirmCancel(false);
-    },
-    onError: (err) => toast.error(err.response?.data?.error || 'Failed to cancel'),
-  });
+  const cancelMutation = useMutation(
+    (subId) => paymentsAPI.cancelSubscription({ subscriptionId: subId || sub?.id }),
+    {
+      onSuccess: () => {
+        qc.invalidateQueries('subscription');
+        toast.success('Subscription will cancel at period end');
+        setConfirmCancel(false);
+      },
+      onError: (err) => toast.error(err.response?.data?.error || 'Failed to cancel'),
+    }
+  );
 
   const daysLeft = sub?.current_period_end
     ? Math.max(0, differenceInDays(new Date(sub.current_period_end), new Date()))
@@ -267,7 +270,7 @@ export default function SubscriptionPage() {
                   Keep Subscription
                 </button>
                 <button
-                  onClick={() => cancelMutation.mutate()}
+                  onClick={() => cancelMutation.mutate(sub?.id)}
                   disabled={cancelMutation.isLoading}
                   className="btn-danger flex-1 py-2.5"
                 >

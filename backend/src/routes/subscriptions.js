@@ -98,7 +98,8 @@ router.patch('/charity', authenticate, async (req, res) => {
       .select('id')
       .eq('user_id', req.user.id)
       .eq('status', 'active')
-      .single();
+      .limit(1)
+      .maybeSingle();
 
     if (!subscription) return res.status(404).json({ error: 'No active subscription' });
 
@@ -114,4 +115,13 @@ router.patch('/charity', authenticate, async (req, res) => {
   }
 });
 
+// Alias for cancel subscription
+router.post(['/cancel', '/cancel-subscription'], authenticate, async (req, res) => {
+  // Delegate directly to the payments cancel-subscription logic
+  const paymentsRouter = require('./payments');
+  req.url = '/cancel-subscription';
+  return paymentsRouter(req, res);
+});
+
 module.exports = router;
+
