@@ -231,7 +231,7 @@ export default function RegisterPage() {
                     className="space-y-4"
                   >
                     <h3 className="text-white font-semibold text-lg mb-1">Personal details</h3>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <label className="block text-sm text-dark-300 mb-2">First Name</label>
                         <input {...register('first_name', { required: 'Required' })} className="input-field" />
@@ -247,7 +247,7 @@ export default function RegisterPage() {
                       <label className="block text-sm text-dark-300 mb-2">Phone</label>
                       <input {...register('phone')} type="tel" className="input-field" placeholder="+91 98765 43210" />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <label className="block text-sm text-dark-300 mb-2">Golf Club</label>
                         <input {...register('golf_club')} className="input-field" placeholder="Your club" />
@@ -273,7 +273,7 @@ export default function RegisterPage() {
                     <h3 className="text-white font-semibold text-lg mb-1">Choose plan & charity</h3>
 
                     {/* Plan selector */}
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-3">
                       {[
                         { id: 'monthly', label: 'Monthly', price: '₹999/mo' },
                         { id: 'yearly', label: 'Yearly', price: '₹9,999/yr', badge: 'Save ₹1,989' },

@@ -155,7 +155,7 @@ export default function DashboardLayout({ children, title, legalFooterMaxWidth =
               {nav.map((item) => {
                 const active = router.pathname === item.href;
                 return (
-                  <Link key={item.href} href={item.href}>
+                  <Link key={item.href} href={item.href} onClick={() => setSidebarOpen(false)}>
                     <motion.div
                       className={active ? 'sidebar-link sidebar-link-active' : 'sidebar-link'}
                       whileHover={{ x: active ? 0 : 4, transition: { duration: 0.2 } }}
@@ -178,6 +178,7 @@ export default function DashboardLayout({ children, title, legalFooterMaxWidth =
             {user?.role === 'admin' && (
               <Link
                 href={isAdmin ? '/dashboard' : '/admin'}
+                onClick={() => setSidebarOpen(false)}
                 className="flex items-center gap-2 px-4 py-2 text-dark-500 hover:text-brand-400 text-sm transition-colors mb-2"
               >
                 <IconShuffle size={16} />
@@ -231,23 +232,24 @@ export default function DashboardLayout({ children, title, legalFooterMaxWidth =
         <main className="flex-1 min-w-0 flex flex-col min-h-screen">
           {/* Top bar */}
           <header
-            className="sticky top-0 z-20 flex items-center justify-between px-6 py-4"
+            className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4"
             style={{
               background: 'rgba(6,8,19,0.7)',
               backdropFilter: 'blur(12px)',
               borderBottom: '1px solid rgba(255,255,255,0.05)',
             }}
           >
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden text-dark-300 hover:text-white text-xl"
+                className="lg:hidden text-dark-300 hover:text-white text-xl p-1 -ml-1 rounded-lg hover:bg-white/5 transition-colors flex-shrink-0"
+                aria-label="Toggle Navigation Menu"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
               </button>
-              <h1 className="text-white font-bold text-lg">{title}</h1>
+              <h1 className="text-white font-bold text-base sm:text-lg truncate max-w-[170px] sm:max-w-none">{title}</h1>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
               <Link
                 href="/dashboard/profile"
                 className="flex items-center gap-2 group"
@@ -259,11 +261,11 @@ export default function DashboardLayout({ children, title, legalFooterMaxWidth =
                   <p className="text-dark-500 text-[10px] leading-none">View Profile</p>
                 </div>
                 {user?.avatar_url ? (
-                  <div className="w-9 h-9 rounded-lg border border-white/10 overflow-hidden group-hover:border-brand-500/50 transition-colors">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg border border-white/10 overflow-hidden group-hover:border-brand-500/50 transition-colors">
                     <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
                   </div>
                 ) : (
-                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-dark-950 font-bold text-xs group-hover:scale-105 transition-transform">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-dark-950 font-bold text-xs group-hover:scale-105 transition-transform">
                     {user?.first_name?.[0]}{user?.last_name?.[0]}
                   </div>
                 )}
@@ -275,7 +277,7 @@ export default function DashboardLayout({ children, title, legalFooterMaxWidth =
           <AnimatePresence mode="wait">
             <motion.div
               key={router.pathname}
-              className="p-6 flex-1"
+              className="p-3 sm:p-6 flex-1 min-w-0"
               variants={pageVariants}
               initial="initial"
               animate="enter"

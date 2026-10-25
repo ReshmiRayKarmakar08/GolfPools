@@ -87,14 +87,14 @@ export default function AdminDrawsPage() {
     <DashboardLayout title="Draws Management">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-white font-bold text-xl">Monthly Draws</h2>
             <p className="text-dark-400 text-sm mt-1">Create, configure and execute monthly prize draws</p>
           </div>
           <motion.button
             onClick={() => setShowCreate(!showCreate)}
-            className="btn-primary px-5 py-2.5"
+            className="btn-primary px-5 py-2.5 w-full sm:w-auto text-center"
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
           >
@@ -111,10 +111,10 @@ export default function AdminDrawsPage() {
               exit={{ opacity: 0, height: 0, y: -10 }}
               className="overflow-hidden"
             >
-              <div className="glass-card p-6 border border-brand-500/20">
+              <div className="glass-card p-4 sm:p-6 border border-brand-500/20">
                 <h3 className="text-white font-semibold mb-5">Create New Draw</h3>
                 <form onSubmit={handleSubmit(data => createMutation.mutate(data))} className="space-y-4">
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm text-dark-300 mb-2">Month</label>
                       <select {...register('draw_month', { valueAsNumber: true })} className="input-field">
@@ -154,13 +154,13 @@ export default function AdminDrawsPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="glass-card p-6 border border-brand-500/20"
+              className="glass-card p-4 sm:p-6 border border-brand-500/20"
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-white font-semibold">Simulation Result</h3>
                 <button onClick={() => setSimResult(null)} className="text-dark-500 hover:text-white"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </div>
-              <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4">
                 {[
                   { label: 'Participants', value: simResult.total_participants, color: 'text-white' },
                   { label: '5-Match', value: simResult.five_match_count, color: 'text-yellow-400' },
@@ -171,12 +171,12 @@ export default function AdminDrawsPage() {
                 ].map((item, i) => (
                   <motion.div
                     key={i}
-                    className="text-center"
+                    className="text-center p-2 rounded-xl bg-white/[0.02]"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.1 }}
                   >
-                    <div className={`text-2xl font-bold ${item.color}`}>{item.value}</div>
+                    <div className={`text-xl sm:text-2xl font-bold font-mono ${item.color}`}>{item.value}</div>
                     <div className="text-dark-500 text-xs">{item.label}</div>
                   </motion.div>
                 ))}
@@ -187,20 +187,20 @@ export default function AdminDrawsPage() {
 
         {/* Draws table */}
         <div className="glass-card overflow-hidden">
-          <div className="px-6 py-4 border-b border-white/5">
+          <div className="px-4 sm:px-6 py-4 border-b border-white/5">
             <h3 className="text-white font-semibold">All Draws</h3>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[760px] text-sm whitespace-nowrap">
               <thead>
                 <tr className="border-b border-white/5">
-                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase tracking-wider">Draw</th>
-                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase tracking-wider">Participants</th>
-                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase tracking-wider">Prize Pool</th>
-                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase tracking-wider">Winners</th>
-                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase tracking-wider">Winning Numbers</th>
-                  <th className="px-6 py-3 text-right text-dark-400 text-xs uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase tracking-wider whitespace-nowrap">Draw</th>
+                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase tracking-wider whitespace-nowrap">Status</th>
+                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase tracking-wider whitespace-nowrap">Participants</th>
+                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase tracking-wider whitespace-nowrap">Prize Pool</th>
+                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase tracking-wider whitespace-nowrap">Winners</th>
+                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase tracking-wider whitespace-nowrap">Winning Numbers</th>
+                  <th className="px-6 py-3 text-right text-dark-400 text-xs uppercase tracking-wider whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.03]">

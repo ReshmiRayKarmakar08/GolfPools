@@ -35,7 +35,7 @@ function ActionModal({ winner, type, onClose, onSubmit, loading }) {
         onClick={onClose}
       >
         <motion.div
-          className="glass-card p-8 w-full max-w-md relative"
+          className="glass-card p-5 sm:p-8 w-full max-w-md relative"
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -216,16 +216,16 @@ export default function AdminWinnersPage() {
         {/* Winners table */}
         <div className="glass-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[760px] text-sm whitespace-nowrap">
               <thead>
                 <tr className="border-b border-white/5">
-                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase">Winner</th>
-                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase">Draw</th>
-                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase">Category</th>
-                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase">Prize</th>
-                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase">Proof</th>
-                  <th className="px-6 py-3 text-right text-dark-400 text-xs uppercase">Actions</th>
+                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase whitespace-nowrap">Winner</th>
+                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase whitespace-nowrap">Draw</th>
+                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase whitespace-nowrap">Category</th>
+                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase whitespace-nowrap">Prize</th>
+                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase whitespace-nowrap">Status</th>
+                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase whitespace-nowrap">Proof</th>
+                  <th className="px-6 py-3 text-right text-dark-400 text-xs uppercase whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.03]">

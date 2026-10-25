@@ -33,17 +33,17 @@ export default function AdminUsersPage() {
   return (
     <DashboardLayout title="User Management">
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-white font-bold text-xl">Users</h2>
             <p className="text-dark-400 text-sm">{total} total users</p>
           </div>
-          <div className="relative">
+          <div className="relative w-full sm:w-64">
             <input
               type="text"
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(1); }}
-              className="input-field w-64 pl-9"
+              className="input-field w-full pl-9"
               placeholder="Search by name or email..."
             />
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-500 text-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
@@ -52,15 +52,15 @@ export default function AdminUsersPage() {
 
         <div className="glass-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[720px] text-sm whitespace-nowrap">
               <thead>
                 <tr className="border-b border-white/5">
-                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase">User</th>
-                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase">Role</th>
-                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase">Subscription</th>
-                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase">Joined</th>
-                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase">Status</th>
-                  <th className="px-6 py-3 text-right text-dark-400 text-xs uppercase">Actions</th>
+                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase whitespace-nowrap">User</th>
+                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase whitespace-nowrap">Role</th>
+                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase whitespace-nowrap">Subscription</th>
+                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase whitespace-nowrap">Joined</th>
+                  <th className="px-6 py-3 text-left text-dark-400 text-xs uppercase whitespace-nowrap">Status</th>
+                  <th className="px-6 py-3 text-right text-dark-400 text-xs uppercase whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/3">
@@ -72,9 +72,9 @@ export default function AdminUsersPage() {
                   const sub = user.subscriptions?.[0];
                   return (
                     <tr key={user.id} className="hover:bg-white/2 transition-colors">
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-dark-950 font-bold text-xs">
+                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-dark-950 font-bold text-xs flex-shrink-0">
                             {user.first_name?.[0]}{user.last_name?.[0]}
                           </div>
                           <div>
@@ -83,10 +83,10 @@ export default function AdminUsersPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <span className={user.role === 'admin' ? 'badge-warning' : 'badge-info'}>{user.role}</span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         {sub ? (
                           <div>
                             <span className={sub.status === 'active' ? 'badge-success' : 'badge-error'}>{sub.status}</span>
@@ -96,15 +96,15 @@ export default function AdminUsersPage() {
                           <span className="text-dark-600 text-xs">None</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-dark-400 text-sm">
+                      <td className="px-6 py-4 text-dark-400 text-sm whitespace-nowrap">
                         {format(new Date(user.created_at), 'MMM d, yyyy')}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <span className={user.is_active ? 'badge-success' : 'badge-error'}>
                           {user.is_active ? 'Active' : 'Inactive'}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2">
                           {user.role !== 'admin' ? (
                             <>
@@ -142,7 +142,7 @@ export default function AdminUsersPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="px-6 py-4 border-t border-white/5 flex items-center justify-between">
+            <div className="px-6 py-4 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3">
               <span className="text-dark-500 text-sm">Page {page} of {totalPages}</span>
               <div className="flex gap-2">
                 <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="btn-secondary px-4 py-1.5 text-sm disabled:opacity-30">← Prev</button>

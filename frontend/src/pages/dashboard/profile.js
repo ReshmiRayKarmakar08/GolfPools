@@ -164,7 +164,7 @@ export default function ProfilePage() {
     <DashboardLayout title="Profile">
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Avatar & Basic Info */}
-        <div className="glass-card p-6 flex flex-col sm:flex-row items-center gap-6">
+        <div className="glass-card p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-6">
           <div className="relative group">
             <div className="w-24 h-24 rounded-3xl overflow-hidden border-2 border-white/10 group-hover:border-brand-500/50 transition-all duration-300">
               {user?.avatar_url ? (
@@ -186,10 +186,10 @@ export default function ProfilePage() {
             </label>
           </div>
           <div className="text-center sm:text-left">
-            <h2 className="text-white font-bold text-2xl">
+            <h2 className="text-white font-bold text-xl sm:text-2xl">
               {user?.first_name} {user?.last_name}
             </h2>
-            <p className="text-dark-400">{user?.email}</p>
+            <p className="text-dark-400 text-sm sm:text-base">{user?.email}</p>
             <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-2">
               <span className="badge-primary px-3 py-1 text-[10px] uppercase tracking-wider">{user?.role}</span>
               {user?.email_verified && <span className="badge-success px-3 py-1 text-[10px] uppercase tracking-wider">Verified</span>}
@@ -198,10 +198,10 @@ export default function ProfilePage() {
         </div>
 
         {/* Profile form */}
-        <div className="glass-card p-6">
+        <div className="glass-card p-4 sm:p-6">
           <h3 className="text-white font-semibold mb-5">Personal Details</h3>
           <form onSubmit={handleSubmit((d) => profileMutation.mutate(d))} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm text-dark-300 mb-2">First Name</label>
                 <input {...register('first_name')} className="input-field" />
@@ -234,7 +234,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Change password */}
-        <div className="glass-card p-6">
+        <div className="glass-card p-4 sm:p-6">
           <h3 className="text-white font-semibold mb-5">Change Password</h3>
           <form
             onSubmit={handlePwd((d) => passwordMutation.mutate(d))}

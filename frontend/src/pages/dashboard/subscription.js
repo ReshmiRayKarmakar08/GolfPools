@@ -52,7 +52,7 @@ export default function SubscriptionPage() {
     return (
       <DashboardLayout title="Subscription" legalFooterMaxWidth="max-w-2xl">
         <div className="max-w-2xl mx-auto space-y-6">
-          <div className="max-w-lg mx-auto text-center glass-card p-12">
+          <div className="max-w-lg mx-auto text-center glass-card p-6 sm:p-12">
             <div className="text-5xl mb-4">⛳</div>
             <h2 className="text-white font-bold text-xl mb-2">
               {sub?.status === 'cancelled'
@@ -68,7 +68,7 @@ export default function SubscriptionPage() {
                 ? 'Your previous plan has completed. Renew now to continue entering monthly draws, submitting golf scores, and supporting your chosen charity!'
                 : 'Subscribe to enter monthly draws, log your scores, and support a charity you love.'}
             </p>
-            <Link href="/dashboard/subscribe" className="btn-gold px-8 py-3 inline-block font-bold">
+            <Link href="/dashboard/subscribe" className="btn-gold px-8 py-3 inline-block font-bold w-full sm:w-auto text-center">
               {sub?.status === 'cancelled' || sub?.status === 'expired' ? 'Renew / Choose a Plan →' : 'Choose a Plan →'}
             </Link>
           </div>
@@ -118,7 +118,7 @@ export default function SubscriptionPage() {
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Active subscription card */}
         <motion.div
-          className="glass-card p-6 relative overflow-hidden"
+          className="glass-card p-4 sm:p-6 relative overflow-hidden"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -129,7 +129,7 @@ export default function SubscriptionPage() {
             }}
           />
           <div className="relative z-10">
-            <div className="flex items-start justify-between mb-5">
+            <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-5">
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span
@@ -162,7 +162,7 @@ export default function SubscriptionPage() {
                   </span>
                 </div>
               </div>
-              <div className="text-right">
+              <div className="text-left sm:text-right">
                 <div className="text-dark-400 text-sm">Days Remaining</div>
                 <div
                   className={`text-4xl font-display font-bold ${
@@ -207,7 +207,7 @@ export default function SubscriptionPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="glass-card p-4">
                 <div className="text-dark-400 text-xs mb-1">Charity</div>
                 <div className="text-white font-medium text-sm">
@@ -233,7 +233,7 @@ export default function SubscriptionPage() {
 
         {/* Action card: Renew / Extend Subscription if daysLeft == 0 or cancelling */}
         {(daysLeft === 0 || sub.cancel_at_period_end || sub.status === 'expired') && (
-          <div className="glass-card p-6 border border-brand-500/30 bg-brand-950/20">
+          <div className="glass-card p-4 sm:p-6 border border-brand-500/30 bg-brand-950/20">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <h3 className="text-white font-bold text-lg mb-1">
@@ -245,7 +245,7 @@ export default function SubscriptionPage() {
                     : 'Subscribe to another plan to keep your monthly draw entries active.'}
                 </p>
               </div>
-              <Link href="/dashboard/subscribe" className="btn-gold px-6 py-3 font-bold text-sm whitespace-nowrap">
+              <Link href="/dashboard/subscribe" className="btn-gold px-6 py-3 font-bold text-sm w-full sm:w-auto text-center whitespace-nowrap">
                 Subscribe / Renew Plan →
               </Link>
             </div>

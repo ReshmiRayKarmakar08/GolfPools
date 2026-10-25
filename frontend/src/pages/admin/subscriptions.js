@@ -53,7 +53,7 @@ export default function AdminSubscriptionsPage() {
         </div>
 
         <motion.div
-          className="glass-card p-6"
+          className="glass-card p-4 sm:p-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -65,15 +65,15 @@ export default function AdminSubscriptionsPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[680px] text-sm whitespace-nowrap">
               <thead>
                 <tr className="text-dark-500 text-left border-b border-white/5">
-                  <th className="py-3 pr-4 font-medium">Member</th>
-                  <th className="py-3 pr-4 font-medium">Plan</th>
-                  <th className="py-3 pr-4 font-medium">Status</th>
-                  <th className="py-3 pr-4 font-medium">Charity</th>
-                  <th className="py-3 pr-4 font-medium">Period Ends</th>
-                  <th className="py-3 pr-4 font-medium">Amount</th>
+                  <th className="py-3 pr-4 font-medium whitespace-nowrap">Member</th>
+                  <th className="py-3 pr-4 font-medium whitespace-nowrap">Plan</th>
+                  <th className="py-3 pr-4 font-medium whitespace-nowrap">Status</th>
+                  <th className="py-3 pr-4 font-medium whitespace-nowrap">Charity</th>
+                  <th className="py-3 pr-4 font-medium whitespace-nowrap">Period Ends</th>
+                  <th className="py-3 pr-4 font-medium whitespace-nowrap">Amount</th>
                 </tr>
               </thead>
               <tbody>
@@ -90,28 +90,28 @@ export default function AdminSubscriptionsPage() {
                   </tr>
                 )}
                 {filtered.map((sub) => (
-                  <tr key={sub.id} className="border-b border-white/5 last:border-0">
-                    <td className="py-4 pr-4">
+                  <tr key={sub.id} className="border-b border-white/5 last:border-0 hover:bg-white/[0.02]">
+                    <td className="py-4 pr-4 whitespace-nowrap">
                       <div className="text-white font-medium">
                         {sub.users?.first_name || 'Member'} {sub.users?.last_name || ''}
                       </div>
                       <div className="text-dark-500 text-xs">{sub.users?.email}</div>
                     </td>
-                    <td className="py-4 pr-4 text-dark-300">
+                    <td className="py-4 pr-4 text-dark-300 whitespace-nowrap">
                       {sub.plan_type || 'monthly'}
                     </td>
-                    <td className="py-4 pr-4">
+                    <td className="py-4 pr-4 whitespace-nowrap">
                       <span className={statusStyles[sub.status] || 'badge-neutral'}>
                         {sub.status || 'unknown'}
                       </span>
                     </td>
-                    <td className="py-4 pr-4 text-dark-400">
+                    <td className="py-4 pr-4 text-dark-400 whitespace-nowrap">
                       {sub.charities?.name || '—'}
                     </td>
-                    <td className="py-4 pr-4 text-dark-400">
+                    <td className="py-4 pr-4 text-dark-400 whitespace-nowrap">
                       {sub.current_period_end ? new Date(sub.current_period_end).toLocaleDateString('en-IN') : '—'}
                     </td>
-                    <td className="py-4 pr-4 text-white font-mono">
+                    <td className="py-4 pr-4 text-white font-mono whitespace-nowrap">
                       ₹{(sub.amount || 0).toLocaleString('en-IN')}
                     </td>
                   </tr>

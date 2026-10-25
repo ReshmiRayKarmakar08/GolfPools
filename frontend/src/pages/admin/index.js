@@ -34,7 +34,7 @@ function CountUpCard({ label, value, icon, sub, link, delay = 0, prefix = '' }) 
 
   const card = (
     <motion.div
-      className="glass-card-hover p-6 floating-card"
+      className="glass-card-hover p-4 sm:p-6 floating-card"
       initial={{ opacity: 0, y: 30, filter: 'blur(4px)' }}
       animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
       transition={{ delay, duration: 0.6 }}
@@ -49,10 +49,10 @@ function CountUpCard({ label, value, icon, sub, link, delay = 0, prefix = '' }) 
         </motion.span>
         {link && <span className="text-brand-500 text-xs">View →</span>}
       </div>
-      <div className="text-3xl font-bold text-white font-mono mb-1">
+      <div className="text-2xl sm:text-3xl font-bold text-white font-mono mb-1">
         {prefix}<span ref={numRef}>0</span>
       </div>
-      <div className="text-dark-400 text-sm">{label}</div>
+      <div className="text-dark-400 text-xs sm:text-sm">{label}</div>
       {sub && <div className="text-dark-600 text-xs mt-1">{sub}</div>}
     </motion.div>
   );
@@ -89,7 +89,7 @@ export default function AdminDashboard() {
     <DashboardLayout title="Admin Dashboard">
       <div className="space-y-6">
         {/* Stats with count-up */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <CountUpCard icon={<IconUsers className="text-brand-400" size={24} />} label="Total Users" value={stats.totalUsers || 0} link="/admin/users" delay={0} />
           <CountUpCard icon={<IconCreditCard className="text-green-400" size={24} />} label="Active Subscriptions" value={stats.activeSubscriptions || 0} link="/admin/subscriptions" delay={0.1} />
           <CountUpCard icon={<IconDollar className="text-yellow-400" size={24} />} label="Revenue (30d)" value={stats.totalRevenue || 0} prefix="₹" delay={0.2} />
@@ -100,7 +100,7 @@ export default function AdminDashboard() {
         {analyticsData && (
           <div className="grid lg:grid-cols-3 gap-6">
             <motion.div
-              className="lg:col-span-2 glass-card p-6"
+              className="lg:col-span-2 glass-card p-4 sm:p-6"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}

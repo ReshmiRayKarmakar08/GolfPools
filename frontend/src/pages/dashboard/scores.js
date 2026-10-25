@@ -134,7 +134,7 @@ export default function ScoresPage() {
         )}
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <h2 className="text-white font-bold text-lg">Score History</h2>
             <p className="text-dark-500 text-sm">
@@ -143,7 +143,7 @@ export default function ScoresPage() {
           </div>
           <motion.button
             onClick={() => setShowAdd(!showAdd)}
-            className="btn-primary text-sm px-5 py-2.5"
+            className="btn-primary text-sm px-5 py-2.5 w-full sm:w-auto text-center"
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
           >
@@ -279,7 +279,7 @@ export default function ScoresPage() {
                       loading={updateMutation.isLoading}
                     />
                   ) : (
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-4">
                         <motion.div
                           className="score-badge text-xl text-brand-300 w-14 h-14"

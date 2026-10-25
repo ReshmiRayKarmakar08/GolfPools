@@ -352,11 +352,11 @@ export default function SubscribePage() {
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid lg:grid-cols-2 gap-6 sm:gap-8">
           {/* Left — Plan & Charity */}
           <div className="space-y-6">
             {/* Plan selector */}
-            <div className="glass-card p-6">
+            <div className="glass-card p-4 sm:p-6">
               <h3 className="text-white font-semibold mb-4">Select Plan</h3>
               <div className="space-y-3">
                 {PLANS.map((p) => (
@@ -398,7 +398,7 @@ export default function SubscribePage() {
             </div>
 
             {/* Charity selector */}
-            <div className="glass-card p-6">
+            <div className="glass-card p-4 sm:p-6">
               <h3 className="text-white font-semibold mb-1">Support a Charity</h3>
               <p className="text-dark-500 text-sm mb-4">
                 Minimum 10% of your subscription goes to your chosen charity
@@ -463,7 +463,7 @@ export default function SubscribePage() {
 
           {/* Right — Order Summary */}
           <div className="space-y-4">
-            <div className="glass-card p-6 sticky top-24">
+            <div className="glass-card p-4 sm:p-6 sticky top-24">
               <h3 className="text-white font-semibold mb-5">Order Summary</h3>
 
               {/* Plan */}

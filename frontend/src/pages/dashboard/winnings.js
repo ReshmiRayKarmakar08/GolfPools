@@ -93,27 +93,27 @@ export default function WinningsPage() {
     <DashboardLayout title="Winnings">
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Summary stats */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <motion.div
-            className="glass-card p-6 text-center floating-card"
+            className="glass-card p-4 sm:p-6 text-center floating-card"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <div className="text-3xl font-bold font-mono gradient-text-gold mb-1">
+            <div className="text-2xl sm:text-3xl font-bold font-mono gradient-text-gold mb-1">
               ₹<span ref={totalRef}>0</span>
             </div>
-            <div className="text-dark-400 text-sm">Total Won</div>
+            <div className="text-dark-400 text-xs sm:text-sm">Total Won</div>
           </motion.div>
           <motion.div
-            className="glass-card p-6 text-center floating-card"
+            className="glass-card p-4 sm:p-6 text-center floating-card"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <div className="text-3xl font-bold font-mono text-green-400 mb-1">
+            <div className="text-2xl sm:text-3xl font-bold font-mono text-green-400 mb-1">
               ₹<span ref={paidRef}>0</span>
             </div>
-            <div className="text-dark-400 text-sm">Paid Out</div>
+            <div className="text-dark-400 text-xs sm:text-sm">Paid Out</div>
           </motion.div>
         </div>
 
@@ -127,12 +127,12 @@ export default function WinningsPage() {
             {winnings.map((w, i) => (
               <motion.div
                 key={w.id}
-                className="glass-card-hover p-6"
+                className="glass-card-hover p-4 sm:p-6"
                 initial={{ opacity: 0, y: 30, filter: 'blur(4px)' }}
                 animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                 transition={{ delay: i * 0.1, duration: 0.5 }}
               >
-                <div className="flex items-start justify-between mb-3">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
                   <div className="flex items-center gap-3">
                     <motion.span
                       className="text-3xl"
@@ -150,8 +150,8 @@ export default function WinningsPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="gradient-text-gold font-bold text-2xl font-mono">
+                  <div className="text-left sm:text-right">
+                    <div className="gradient-text-gold font-bold text-xl sm:text-2xl font-mono">
                       ₹{(w.prize_amount || 0).toLocaleString('en-IN')}
                     </div>
                     <span className={{

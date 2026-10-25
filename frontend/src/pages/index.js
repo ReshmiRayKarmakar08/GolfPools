@@ -226,7 +226,7 @@ export default function Home() {
           >
             {/* Live badge */}
             <motion.div
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium mb-10"
+              className="inline-flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full text-xs sm:text-sm font-medium mb-8 sm:mb-10 max-w-full text-center"
               style={{
                 background: 'rgba(0,198,255,0.08)',
                 border: '1px solid rgba(0,198,255,0.15)',
@@ -236,14 +236,14 @@ export default function Home() {
               animate={{ y: [0, -5, 0] }}
               transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
             >
-              <span className="w-2 h-2 rounded-full bg-brand-500 animate-pulse" />
-              Monthly draw now open — ₹3.2 Lakh prize pool
+              <span className="w-2 h-2 rounded-full bg-brand-500 animate-pulse flex-shrink-0" />
+              <span>Monthly draw now open — ₹3.2 Lakh prize pool</span>
             </motion.div>
 
             {/* Hero heading — GSAP stagger */}
             <h1
               ref={heroRef}
-              className="font-display tracking-wider text-5xl md:text-8xl lg:text-9xl text-white leading-none mb-8"
+              className="font-display tracking-wider text-4xl sm:text-6xl md:text-8xl lg:text-9xl text-white leading-none mb-6 sm:mb-8"
               style={{ perspective: '800px' }}
             >
               <span className="hero-word inline-block">PLAY.</span>{' '}
@@ -254,7 +254,7 @@ export default function Home() {
             </h1>
 
             <motion.p
-              className="text-lg md:text-xl text-dark-300 max-w-2xl mx-auto mb-12 leading-relaxed"
+              className="text-base sm:text-lg md:text-xl text-dark-300 max-w-2xl mx-auto mb-8 sm:mb-12 leading-relaxed px-2"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1, duration: 0.7 }}
@@ -265,22 +265,22 @@ export default function Home() {
 
             {/* CTAs */}
             <motion.div
-              className="flex flex-col sm:flex-row items-center justify-center gap-4"
+              className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full max-w-md sm:max-w-none mx-auto"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.3, duration: 0.6 }}
             >
-              <MagneticButton strength={0.3}>
+              <MagneticButton strength={0.3} className="w-full sm:w-auto">
                 <button 
                   onClick={() => {
                     navigateToPlan('monthly');
                   }}
-                  className="btn-primary text-base px-10 py-4 relative z-10"
+                  className="btn-primary text-sm sm:text-base px-8 sm:px-10 py-3.5 sm:py-4 relative z-10 w-full sm:w-auto text-center"
                 >
                   Start Playing for ₹999/mo →
                 </button>
               </MagneticButton>
-                <Link href="#how-it-works" className="btn-secondary text-base px-8 py-4">
+                <Link href="#how-it-works" className="btn-secondary text-sm sm:text-base px-6 sm:px-8 py-3.5 sm:py-4 w-full sm:w-auto text-center">
                   See How It Works
                 </Link>
               </motion.div>

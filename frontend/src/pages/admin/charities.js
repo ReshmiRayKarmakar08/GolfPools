@@ -50,12 +50,12 @@ export default function AdminCharitiesPage() {
   return (
     <DashboardLayout title="Charities Management">
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-white font-bold text-xl">Charities</h2>
             <p className="text-dark-400 text-sm">{charities?.length || 0} active charities</p>
           </div>
-          <button onClick={() => openEdit('new')} className="btn-primary px-5 py-2.5">
+          <button onClick={() => openEdit('new')} className="btn-primary px-5 py-2.5 w-full sm:w-auto text-center">
             + Add Charity
           </button>
         </div>
@@ -69,7 +69,7 @@ export default function AdminCharitiesPage() {
               exit={{ opacity: 0, height: 0 }}
               className="overflow-hidden"
             >
-              <div className="glass-card p-6 border border-brand-500/20">
+              <div className="glass-card p-4 sm:p-6 border border-brand-500/20">
                 <h3 className="text-white font-semibold mb-5">
                   {editing === 'new' ? 'Add New Charity' : `Edit: ${editing.name}`}
                 </h3>

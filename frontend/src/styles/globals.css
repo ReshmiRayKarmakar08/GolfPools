@@ -744,3 +744,29 @@ body::before {
   border-radius: 16px;
   padding: 16px 20px;
 }
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE TABLE & TOUCH ENHANCEMENTS
+   ═══════════════════════════════════════════ */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+.overflow-x-auto::-webkit-scrollbar {
+  height: 5px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: rgba(0, 198, 255, 0.3);
+  border-radius: 4px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 198, 255, 0.5);
+}
+

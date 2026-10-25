@@ -60,18 +60,18 @@ export default function DrawsPage() {
       <div className="max-w-3xl mx-auto space-y-6">
 
         {/* Current Draw Card */}
-        <div className="glass-card p-8 relative overflow-hidden">
+        <div className="glass-card p-4 sm:p-8 relative overflow-hidden">
           <div className="absolute inset-0 opacity-5"
             style={{ background: 'radial-gradient(circle at top right, #00c6ff, transparent)' }} />
 
           <div className="relative z-10">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
               <div>
-                <h2 className="text-2xl font-bold text-white">{currentMonth} {currentYear} Draw</h2>
-                <p className="text-dark-400 text-sm mt-1">Monthly Stableford Score Draw</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-white">{currentMonth} {currentYear} Draw</h2>
+                <p className="text-dark-400 text-xs sm:text-sm mt-1">Monthly Stableford Score Draw</p>
               </div>
               {draw && (
-                <span className={draw.status === 'completed' ? 'badge-success' : 'badge-warning'}>
+                <span className={draw.status === 'completed' ? 'badge-success self-start sm:self-auto' : 'badge-warning self-start sm:self-auto'}>
                   {draw.status === 'completed' ? 'Completed' : 'Open'}
                 </span>
               )}
@@ -80,7 +80,7 @@ export default function DrawsPage() {
             {draw ? (
               <>
                 {/* Prize Pool */}
-                <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
                   {[
                     { label: '5-Match Jackpot', amount: draw.five_match_pool, icon: '★', cls: 'prize-gold' },
                     { label: '4-Match Prize', amount: draw.four_match_pool, icon: '✦', cls: 'prize-silver' },

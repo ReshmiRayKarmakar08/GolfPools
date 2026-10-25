@@ -8,6 +8,9 @@ export default function MagneticButton({ children, className = '', strength = 0.
   useEffect(() => {
     const btn = btnRef.current;
     if (!btn) return;
+    if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) {
+      return;
+    }
 
     const handleMouseMove = (e) => {
       const rect = btn.getBoundingClientRect();
