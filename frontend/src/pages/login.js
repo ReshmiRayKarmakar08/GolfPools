@@ -97,14 +97,10 @@ export default function LoginPage() {
           transition={{ duration: 0.7 }}
         >
           <div className="text-center mb-8">
-            <motion.div
-              className="text-4xl mb-3"
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            >
-              <IconGolf className="text-brand-400" size={40} />
-            </motion.div>
-            <h1 className="font-display tracking-wider text-3xl text-white">WELCOME BACK</h1>
+            <div className="inline-flex items-center justify-center gap-3">
+              <IconGolf className="text-brand-400 flex-shrink-0" size={32} />
+              <h1 className="font-display tracking-wider text-3xl text-white">WELCOME BACK</h1>
+            </div>
             <p className="text-dark-400 mt-2">Sign in to your GolfPools account</p>
           </div>
 
