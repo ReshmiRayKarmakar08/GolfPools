@@ -20,35 +20,28 @@ router.get('/current', authenticate, async (req, res) => {
       .in('status', ['active', 'queued', 'pending'])
       .order('current_period_start', { ascending: true });
 
-    if (!allSubs || allSubs.length === 0) {
-      const { data: lastSub } = await supabaseAdmin
-        .from('subscriptions')
-        .select(`
-          id, plan_type, status, amount, currency,
-          current_period_start, current_period_end,
-          cancel_at_period_end, cancelled_at, charity_percentage, charity_id,
-          charities(id, name, logo_url, short_description)
-        `)
-        .eq('user_id', req.user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (lastSub) {
-        const periodEnd = new Date(lastSub.current_period_end);
-        if (periodEnd <= now && lastSub.status !== 'expired') {
-          await supabaseAdmin.from('subscriptions').update({ status: 'expired' }).eq('id', lastSub.id);
-          lastSub.status = 'expired';
-        }
+    // Transition any cancel_at_period_end subscriptions to 'cancelled' immediately
+    for (const sub of allSubs || []) {
+      if (sub.cancel_at_period_end) {
+        await supabaseAdmin
+          .from('subscriptions')
+          .update({ status: 'cancelled', cancel_at_period_end: false })
+          .eq('id', sub.id);
+        sub.status = 'cancelled';
       }
+    }
 
-      return res.json({ subscription: lastSub || null, queuedSubscriptions: [] });
+    // Filter to truly live subscriptions (active or queued, not cancelled)
+    const liveSubs = (allSubs || []).filter(s => s.status !== 'cancelled' && !s.cancel_at_period_end);
+
+    if (!liveSubs || liveSubs.length === 0) {
+      return res.json({ subscription: null, queuedSubscriptions: [] });
     }
 
     let currentSub = null;
     const queuedSubs = [];
 
-    for (const sub of allSubs) {
+    for (const sub of liveSubs) {
       const periodEnd = new Date(sub.current_period_end);
       const periodStart = new Date(sub.current_period_start);
 
@@ -78,11 +71,12 @@ router.get('/current', authenticate, async (req, res) => {
       }
     }
 
-    if (!currentSub) {
-      currentSub = allSubs[allSubs.length - 1];
+    if (!currentSub && liveSubs.length > 0) {
+      const valid = liveSubs.filter(s => s.status !== 'expired');
+      currentSub = valid.length > 0 ? valid[valid.length - 1] : null;
     }
 
-    res.json({ subscription: currentSub, queuedSubscriptions: queuedSubs });
+    res.json({ subscription: currentSub || null, queuedSubscriptions: queuedSubs });
   } catch (err) {
     console.error('Fetch subscription error:', err);
     res.status(500).json({ error: 'Failed to fetch subscription' });

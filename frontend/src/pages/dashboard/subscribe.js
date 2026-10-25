@@ -201,9 +201,9 @@ export default function SubscribePage() {
         key: orderData.key || process.env.NEXT_PUBLIC_RAZORPAY_KEY,
         amount: orderData.amount,
         currency: orderData.currency || 'INR',
-        name: 'Golf Charity Platform',
+        name: 'GolfPools',
         description: `${plan.label} — ${charityObj?.name || 'Charity'}`,
-        image: '/logo.png',
+        image: typeof window !== 'undefined' ? `${window.location.origin}/logo.png` : 'https://golfpools-web.vercel.app/logo.png',
         order_id: orderData.order_id,
         prefill: {
           name: `${user?.first_name} ${user?.last_name}`,

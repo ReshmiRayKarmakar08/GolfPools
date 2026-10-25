@@ -765,13 +765,18 @@ router.post('/cancel-subscription', authenticate, async (req, res) => {
     }
 
     const cancelledAt = new Date().toISOString();
+    // Pure immediate cancellation:
+    // Update status to 'cancelled' and clear cancel_at_period_end
+    // Also cancel any active/queued subscriptions for this user
     await supabaseAdmin
       .from('subscriptions')
       .update({
-        cancel_at_period_end: true,
+        status: 'cancelled',
+        cancel_at_period_end: false,
         cancelled_at: cancelledAt
       })
-      .eq('id', subscription.id);
+      .eq('user_id', req.user.id)
+      .in('status', ['active', 'queued']);
 
     const { data: user } = await supabaseAdmin
       .from('users')
@@ -781,13 +786,10 @@ router.post('/cancel-subscription', authenticate, async (req, res) => {
 
     await emailService.sendSubscriptionCancellation(
       user?.email || req.user.email,
-      user?.first_name || req.user.first_name,
-      subscription?.current_period_end
-        ? new Date(subscription.current_period_end).toLocaleDateString('en-IN')
-        : 'the end of your current billing cycle'
+      user?.first_name || req.user.first_name
     ).catch(console.error);
 
-    res.json({ message: 'Subscription will be cancelled at the end of the current period', subscriptionId: subscription.id });
+    res.json({ message: 'Subscription has been cancelled immediately', subscriptionId: subscription.id });
   } catch (err) {
     console.error('Cancel subscription error:', err);
     res.status(500).json({ error: 'Failed to cancel subscription' });

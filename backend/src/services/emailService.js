@@ -145,11 +145,12 @@ const sendSubscriptionConfirmation = async (email, firstName, planType, amount) 
   `));
 };
 
-const sendSubscriptionCancellation = async (email, firstName, endDate) => {
-  await sendEmail(email, 'Subscription Cancellation Scheduled', withEmailLayout('Cancellation Confirmed', `
-        <p>Hi ${firstName || 'there'}, your subscription cancellation request is confirmed.</p>
-        <p>Your benefits remain active until <strong>${endDate}</strong>.</p>
-        <a href="${process.env.FRONTEND_URL}/dashboard/subscription" style="display: inline-block; background: #00d4ff; color: #000; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Subscription</a>
+const sendSubscriptionCancellation = async (email, firstName) => {
+  await sendEmail(email, 'Subscription Cancelled', withEmailLayout('Subscription Cancelled', `
+        <p>Hi ${firstName || 'there'},</p>
+        <p>Your GolfPools subscription has been cancelled immediately.</p>
+        <p>You will no longer be billed and will not participate in monthly draws unless you resubscribe.</p>
+        <a href="${process.env.FRONTEND_URL}/dashboard/subscribe" style="display: inline-block; background: #00d4ff; color: #000; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">Subscribe Again</a>
   `));
 };
 

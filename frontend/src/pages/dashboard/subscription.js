@@ -24,7 +24,7 @@ export default function SubscriptionPage() {
     {
       onSuccess: () => {
         qc.invalidateQueries('subscription');
-        toast.success('Subscription will cancel at period end');
+        toast.success('Subscription cancelled successfully');
         setConfirmCancel(false);
       },
       onError: (err) => toast.error(err.response?.data?.error || 'Failed to cancel'),
@@ -47,22 +47,66 @@ export default function SubscriptionPage() {
     );
   }
 
-  if (!sub || sub.status === 'expired') {
+  if (!sub || sub.status === 'expired' || sub.status === 'cancelled') {
     return (
       <DashboardLayout title="Subscription" legalFooterMaxWidth="max-w-2xl">
-        <div className="max-w-lg mx-auto text-center glass-card p-12">
-          <div className="text-5xl mb-4">⛳</div>
-          <h2 className="text-white font-bold text-xl mb-2">
-            {sub?.status === 'expired' ? 'Your Subscription Has Ended' : 'No Active Subscription'}
-          </h2>
-          <p className="text-dark-400 mb-6">
-            {sub?.status === 'expired'
-              ? 'Your previous plan has completed. Renew now to continue entering monthly draws, submitting golf scores, and supporting your chosen charity!'
-              : 'Subscribe to enter monthly draws, log your scores, and support a charity you love.'}
-          </p>
-          <Link href="/dashboard/subscribe" className="btn-gold px-8 py-3 inline-block font-bold">
-            {sub?.status === 'expired' ? 'Renew Subscription Now →' : 'Choose a Plan →'}
-          </Link>
+        <div className="max-w-2xl mx-auto space-y-6">
+          <div className="max-w-lg mx-auto text-center glass-card p-12">
+            <div className="text-5xl mb-4">⛳</div>
+            <h2 className="text-white font-bold text-xl mb-2">
+              {sub?.status === 'cancelled'
+                ? 'Subscription Cancelled'
+                : sub?.status === 'expired'
+                ? 'Your Subscription Has Ended'
+                : 'No Active Subscription'}
+            </h2>
+            <p className="text-dark-400 mb-6">
+              {sub?.status === 'cancelled'
+                ? 'Your subscription is cancelled. You no longer have an active plan and cannot participate in monthly draws until you resubscribe.'
+                : sub?.status === 'expired'
+                ? 'Your previous plan has completed. Renew now to continue entering monthly draws, submitting golf scores, and supporting your chosen charity!'
+                : 'Subscribe to enter monthly draws, log your scores, and support a charity you love.'}
+            </p>
+            <Link href="/dashboard/subscribe" className="btn-gold px-8 py-3 inline-block font-bold">
+              {sub?.status === 'cancelled' || sub?.status === 'expired' ? 'Renew / Choose a Plan →' : 'Choose a Plan →'}
+            </Link>
+          </div>
+
+          {/* Payment history */}
+          {payments && payments.length > 0 && (
+            <div className="glass-card p-6">
+              <h3 className="text-white font-semibold mb-4">Payment History</h3>
+              <div className="space-y-3">
+                {payments.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between py-3 border-b border-white/5 last:border-0"
+                  >
+                    <div>
+                      <div className="text-white text-sm font-medium">
+                        {p.charities?.name || 'Subscription'}
+                      </div>
+                      <div className="text-dark-500 text-xs">
+                        {format(new Date(p.created_at), 'MMM d, yyyy')}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-white font-mono text-sm">
+                        ₹{(p.amount || 0).toLocaleString('en-IN')}
+                      </div>
+                      <span
+                        className={
+                          p.status === 'captured' ? 'badge-success' : 'badge-error'
+                        }
+                      >
+                        {p.status === 'captured' ? 'Paid' : p.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </DashboardLayout>
     );
@@ -288,23 +332,7 @@ export default function SubscriptionPage() {
           </div>
         )}
 
-        {sub.cancel_at_period_end && (
-          <div
-            className="rounded-xl p-4"
-            style={{
-              background: 'rgba(255,215,0,0.07)',
-              border: '1px solid rgba(255,215,0,0.2)',
-            }}
-          >
-            <p className="text-yellow-300 text-sm">
-              ! Your subscription is set to cancel on{' '}
-              {sub.current_period_end
-                ? format(new Date(sub.current_period_end), 'MMMM d, yyyy')
-                : '—'}
-              . You can still participate in draws until then.
-            </p>
-          </div>
-        )}
+
 
         {/* Payment history */}
         {payments && payments.length > 0 && (
