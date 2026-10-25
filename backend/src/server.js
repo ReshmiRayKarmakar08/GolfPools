@@ -52,24 +52,23 @@ app.use(express.json({
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // =============================================
-// HEALTH CHECK — MUST be before rate limiters
-// so Render's health checker and keep-alive
+// HEALTH & KEEP-ALIVE ROUTES — MUST be before rate limiters
+// so Render's health checker and external uptime
 // pings NEVER receive a 429 response.
 // =============================================
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    environment: process.env.NODE_ENV,
-    timestamp: new Date().toISOString()
-  });
-});
+const healthRoutes = require('./routes/health');
+app.use('/health', healthRoutes);
+app.use('/api/health', healthRoutes);
 
-// Rate limiting (applied AFTER /health is declared)
+// Rate limiting (applied AFTER health routes are declared)
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 300, // Increased headroom for legitimate traffic
   message: { error: 'Too many requests, please try again later.' },
-  skip: (req) => req.path === '/health' // extra safety guard
+  skip: (req) => {
+    const path = req.originalUrl || req.url || '';
+    return path.includes('health');
+  }
 });
 app.use('/api/', globalLimiter);
 
@@ -94,9 +93,7 @@ app.use('/api/charities', require('./routes/charities'));
 app.use('/api/winners', require('./routes/winners'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/admin', require('./routes/admin'));
-app.use('/api/health', require('./routes/health'));
 
-// NOTE: /health is now declared above the rate limiters (see line ~52)
 
 // =============================================
 // ERROR HANDLING

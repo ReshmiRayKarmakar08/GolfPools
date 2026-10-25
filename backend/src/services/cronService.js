@@ -109,35 +109,63 @@ cron.schedule('0 2 * * *', async () => {
   }
 });
 
-// Keep-Alive Ping - runs every 14 minutes to prevent:
-// 1. Render free tier sleep (HTTP ping)
-// 2. Supabase free tier project pause (DB query)
-cron.schedule('*/14 * * * *', async () => {
-  const url = process.env.BACKEND_URL || 'https://golfpools.onrender.com';
-  
-  // 1. Ping Render to keep the server awake
-  https.get(`${url}/health`, (res) => {
-    console.log(`[CRON] Render ping: ${res.statusCode}`);
-  }).on('error', (err) => {
-    console.error('[CRON] Render ping failed:', err.message);
-  });
+// =============================================
+// Keep-Alive Ping (Runs every 10 minutes)
+// 1. Pings Render backend HTTP endpoint to keep service awake
+// 2. Executes query on Supabase DB to reset the 7-day inactivity pause
+// =============================================
+const http = require('http');
 
-  // 2. Query Supabase DB to keep the project active (prevents free-tier pause)
+const performKeepAlive = async () => {
+  const timestamp = new Date().toISOString();
+  console.log(`[CRON ${timestamp}] Starting 10-minute keep-alive ping...`);
+
+  // 1. Ping Render Server
+  const backendUrl = process.env.BACKEND_URL || 'https://golfpools.onrender.com';
   try {
-    const { error } = await supabaseAdmin
+    const client = backendUrl.startsWith('https') ? https : http;
+    const req = client.get(`${backendUrl}/health/server`, { timeout: 10000 }, (res) => {
+      console.log(`[CRON ${timestamp}] Render keep-alive ping status: ${res.statusCode}`);
+    });
+    req.on('error', (err) => {
+      console.warn(`[CRON ${timestamp}] Render self-ping note (${backendUrl}):`, err.message);
+    });
+    req.on('timeout', () => {
+      req.destroy();
+      console.warn(`[CRON ${timestamp}] Render self-ping timed out`);
+    });
+  } catch (pingErr) {
+    console.warn(`[CRON ${timestamp}] Render ping error:`, pingErr.message);
+  }
+
+  // 2. Query Supabase directly to register database activity and prevent 7-day pause
+  try {
+    const start = Date.now();
+    const { data, error } = await supabaseAdmin
       .from('charities')
       .select('id')
       .limit(1);
-    
+
+    const latency = Date.now() - start;
+
     if (error) {
-      console.error('[CRON] Supabase keep-alive query failed:', error.message);
+      console.error(`[CRON ${timestamp}] ⚠️ Supabase keep-alive FAILED (${latency}ms):`, error.message);
+      console.error(`[CRON ${timestamp}] ⚠️ IMPORTANT: If project was paused in Supabase, visit https://supabase.com/dashboard to unpause/restore it!`);
     } else {
-      console.log('[CRON] Supabase keep-alive: OK');
+      console.log(`[CRON ${timestamp}] ✅ Supabase keep-alive: ACTIVE (${latency}ms latency). 7-day timer reset.`);
     }
   } catch (err) {
-    console.error('[CRON] Supabase keep-alive error:', err.message);
+    console.error(`[CRON ${timestamp}] ⚠️ Supabase keep-alive unexpected error:`, err.message);
   }
-});
+};
 
+// Schedule every 10 minutes
+cron.schedule('*/10 * * * *', performKeepAlive);
+
+// Also trigger once on startup after 5 seconds
+setTimeout(() => {
+  performKeepAlive();
+}, 5000);
 
 module.exports = {};
+
