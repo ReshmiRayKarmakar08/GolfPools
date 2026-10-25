@@ -7,3 +7,4 @@ frontend/.next/
 .env
 *.pdf
 GolfPools.pdf
+PREVIOUS_CHAT_HISTORY.md

@@ -103,13 +103,15 @@ router.post('/:id/enter', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check subscription
-    const { data: subscription } = await supabaseAdmin
+    // Check subscription safely
+    const { data: activeSubs } = await supabaseAdmin
       .from('subscriptions')
       .select('id')
       .eq('user_id', req.user.id)
       .eq('status', 'active')
-      .maybeSingle();
+      .limit(1);
+
+    const subscription = activeSubs && activeSubs.length > 0 ? activeSubs[0] : null;
 
     if (!subscription) {
       return res.status(403).json({ error: 'Active subscription required to enter draws' });

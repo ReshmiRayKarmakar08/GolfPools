@@ -14,6 +14,7 @@ export default function SubscriptionPage() {
   const { data: subRes, isLoading } = useQuery('subscription', subscriptionsAPI.getCurrent);
   const sub = subRes?.data?.subscription;
   const queuedSubs = subRes?.data?.queuedSubscriptions || [];
+  const pendingSub = subRes?.data?.pendingSubscription;
 
   const { data: payments } = useQuery('paymentHistory', paymentsAPI.getHistory, {
     select: (r) => r.data.payments,
@@ -303,7 +304,7 @@ export default function SubscriptionPage() {
           <div className="glass-card p-6">
             <h3 className="text-white font-semibold mb-2">Manage Subscription</h3>
             <p className="text-dark-400 text-sm mb-4">
-              Cancelling will keep your subscription active until the end of the current period.
+              Cancelling will cancel your subscription immediately. You will no longer be charged and draw entries will pause.
             </p>
             {confirmCancel ? (
               <div className="flex gap-3">
@@ -329,6 +330,38 @@ export default function SubscriptionPage() {
                 Cancel Subscription
               </button>
             )}
+          </div>
+        )}
+
+        {/* Incomplete / Pending checkout placed last */}
+        {pendingSub && (
+          <div className="glass-card p-6 border border-amber-500/30 bg-amber-950/10">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="badge-warning text-xs">Payment Incomplete</span>
+                  <h3 className="text-white font-semibold text-base">Pending Plan Order</h3>
+                </div>
+                <p className="text-dark-400 text-xs">
+                  You have an uncompleted order for a {pendingSub.plan_type} plan (₹{(pendingSub.amount || 0).toLocaleString('en-IN')}).
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => cancelMutation.mutate(pendingSub.id)}
+                  disabled={cancelMutation.isLoading}
+                  className="text-dark-400 hover:text-white text-xs underline px-2 py-1"
+                >
+                  Dismiss
+                </button>
+                <Link
+                  href={`/dashboard/subscribe?plan=${pendingSub.plan_type || 'monthly'}&charity=${pendingSub.charity_id || ''}`}
+                  className="btn-gold px-4 py-2 text-xs font-bold whitespace-nowrap"
+                >
+                  Complete Payment →
+                </Link>
+              </div>
+            </div>
           </div>
         )}
 

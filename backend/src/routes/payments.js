@@ -204,7 +204,7 @@ const buildSubscriptionPeriod = async (userId, plan_type) => {
     .from('subscriptions')
     .select('current_period_end')
     .eq('user_id', userId)
-    .in('status', ['active', 'pending'])
+    .in('status', ['active', 'queued'])
     .order('current_period_end', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -595,7 +595,8 @@ router.post('/verify', [
       }
     }
 
-    const finalStatus = 'active';
+    const isFutureStart = new Date(subscription.current_period_start) > new Date();
+    const finalStatus = isFutureStart ? 'queued' : 'active';
 
     try {
       await supabaseAdmin
@@ -766,17 +767,29 @@ router.post('/cancel-subscription', authenticate, async (req, res) => {
 
     const cancelledAt = new Date().toISOString();
     // Pure immediate cancellation:
-    // Update status to 'cancelled' and clear cancel_at_period_end
-    // Also cancel any active/queued subscriptions for this user
-    await supabaseAdmin
-      .from('subscriptions')
-      .update({
-        status: 'cancelled',
-        cancel_at_period_end: false,
-        cancelled_at: cancelledAt
-      })
-      .eq('user_id', req.user.id)
-      .in('status', ['active', 'queued']);
+    // If a specific subscriptionId is passed, cancel that specific subscription.
+    // Otherwise cancel all active, queued, and pending plans for this user.
+    if (subscriptionId) {
+      await supabaseAdmin
+        .from('subscriptions')
+        .update({
+          status: 'cancelled',
+          cancel_at_period_end: false,
+          cancelled_at: cancelledAt
+        })
+        .eq('id', subscriptionId)
+        .eq('user_id', req.user.id);
+    } else {
+      await supabaseAdmin
+        .from('subscriptions')
+        .update({
+          status: 'cancelled',
+          cancel_at_period_end: false,
+          cancelled_at: cancelledAt
+        })
+        .eq('user_id', req.user.id)
+        .in('status', ['active', 'queued', 'pending']);
+    }
 
     const { data: user } = await supabaseAdmin
       .from('users')
